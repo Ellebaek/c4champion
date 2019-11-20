@@ -180,6 +180,7 @@ class Connect4Game(arcade.Window):
         else:
             return arcade.color.WHITE
 
+# main method
 def main():
     starting_position = [[], [], [], [], [], [], []]
     Connect4Game(WINDOW_WIDTH, int(WINDOW_WIDTH / 7 * 6),
