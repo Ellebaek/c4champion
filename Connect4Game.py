@@ -1,31 +1,70 @@
 import arcade
-import copy
+import PIL
+from PIL import ImageDraw
 
 WINDOW_WIDTH = 700
 MARGIN_PERCENTAGE = 0.1
+ROW_COUNT = 6
+COLUMN_COUNT = 7
+
 # game "states"
 GAME_RUNNING = 1
 GAME_OVER = 2
 
+# first color is no piece played
+# second color is player one
+# third color is player two
+colors = [
+          (255,   255, 255),
+          (255,   0,   0),
+          (255, 255, 0)
+          ]
+
 class Connect4Game(arcade.Window):
-    def __init__(self, width, height, title, start_position=[[], [], [], [], [], [], []], announce_winner=False):
+    def __init__(self, width, height, title, announce_winner=False):
         super().__init__(width, height, title)
         self.set_location(200, 100)
         self.left_margin = self.width * MARGIN_PERCENTAGE / 2
         self.top_margin = self.height * MARGIN_PERCENTAGE / 2
         self.bottom_margin = self.height * MARGIN_PERCENTAGE / 2
-        self.circle_max_radius = self.width * (1 - MARGIN_PERCENTAGE) / (7 * 2)
+        self.circle_max_radius = self.width * (1 - MARGIN_PERCENTAGE) / (COLUMN_COUNT * 2)
+
+        self.texture_list = self.create_textures()
         self.player_position = 4
-        self.player_color = arcade.color.RED
-        self.start_position = start_position
-        self.board_position = copy.deepcopy(start_position)
+        self.current_player = 1
+        self.board_position = None
         self.shape_list = None
+        self.board_sprite_list = None
+
         self.announce_winner = announce_winner
         self.current_state = GAME_RUNNING
         self.winner = None
         self.setup()
 
+    def create_textures(self):
+        """ Create a list of images for sprites based on the global colors. """
+        new_textures = []
+        for color in colors:
+            image = PIL.Image.new('RGBA', (int(self.circle_max_radius*2), int(self.circle_max_radius*2)), (255, 255, 255, 0))
+            draw = ImageDraw.Draw(image)
+            draw.ellipse((self.circle_max_radius*2*0.1, self.circle_max_radius*2*0.1, self.circle_max_radius*2 * 0.9, self.circle_max_radius*2 * 0.9), fill=color)
+            new_textures.append(arcade.Texture(str(color), image=image))
+        return new_textures
+
+    def new_board(self):
+        # Create the 'empty' board of 0's
+        board = [[0 for _x in range(COLUMN_COUNT)] for _y in range(ROW_COUNT)]
+        return board
+
     def setup(self):
+        # reset player position, current player and board
+        self.player_position = 4
+        self.current_player = 1
+        self.board_position = self.new_board()
+        self.current_state = GAME_RUNNING
+        self.winner = None
+
+        # create shapes for drawing background board
         arcade.set_background_color(arcade.color.WHITE)
         self.shape_list = arcade.ShapeElementList()
 
@@ -43,15 +82,20 @@ class Connect4Game(arcade.Window):
                                            arcade.color.BRIGHT_NAVY_BLUE)
         )
 
-        for l in range(7):
-            for b in range(6):
-                self.shape_list.append(
-                    arcade.create_ellipse_filled(self.left_margin + (self.circle_max_radius * (2 * l + 1)),
-                                                 self.bottom_margin + (self.circle_max_radius * (2 * b + 1)),
-                                                 self.circle_max_radius * 0.85,
-                                                 self.circle_max_radius * 0.85,
-                                                 arcade.color.WHITE)
-                )
+        # create sprites (all potential circles and colors)
+        self.board_sprite_list = arcade.SpriteList()
+        for row in range(ROW_COUNT):
+            for column in range(COLUMN_COUNT):
+                sprite = arcade.Sprite()
+                # assign all three color options to each field
+                for texture in self.texture_list:
+                    sprite.append_texture(texture)
+                # set default / start color
+                sprite.set_texture(0)
+                sprite.center_x = self.left_margin + (self.circle_max_radius * (2 * column + 1))
+                sprite.center_y = self.height - self.bottom_margin - (self.circle_max_radius * (2 * row + 1))
+
+                self.board_sprite_list.append(sprite)
 
     def on_draw(self):
         # This command has to happen before we start drawing
@@ -65,21 +109,14 @@ class Connect4Game(arcade.Window):
 
     def draw_running_game(self):
         self.shape_list.draw()
-
-        # draw played board
-        for l in range(len(self.board_position)):
-            for b in range(len(self.board_position[l])):
-                arcade.draw_circle_filled(self.left_margin + (self.circle_max_radius * (2 * l + 1)),
-                                          self.bottom_margin + (self.circle_max_radius * (2 * b + 1)),
-                                          self.circle_max_radius * 0.85,
-                                          self.get_color(l + 1, b + 1))
+        self.board_sprite_list.draw()
 
         # draw cursor
         cursor_position = self.width / 2 + (self.player_position - 4) * self.circle_max_radius * 2
         arcade.draw_triangle_filled(cursor_position - self.circle_max_radius, self.height,
                                     cursor_position + self.circle_max_radius, self.height,
                                     cursor_position, self.height - self.top_margin,
-                                    self.player_color)
+                                    colors[self.current_player])
 
     def draw_game_over(self):
         arcade.draw_text("Game Over",
@@ -92,100 +129,91 @@ class Connect4Game(arcade.Window):
                          arcade.color.BLACK_OLIVE, 28)
 
     def get_winner(self):
-        temp_board = copy.deepcopy(self.board_position)
+        center_height = ROW_COUNT - 1 - self.first_empty_row(3)
         w = None
-        col_heights = []
         # check vertical
-        for l in temp_board:
-            col_heights.append(len(l))
+        for column in range(COLUMN_COUNT):
+            height = ROW_COUNT - 1 - self.first_empty_row(column)
             i = 0
-            while i <= len(l) - 4:
-                if l[i] == l[i + 1] and l[i] == l[i + 2] and l[i] == l[i + 3]:
-                    w = l[i]
+            while i <= height - 4:
+                row_id = ROW_COUNT - 1 - i
+                if self.board_position[row_id][column] == \
+                        self.board_position[row_id-1][column] and self.board_position[row_id][column] == \
+                        self.board_position[row_id-2][column] and self.board_position[row_id][column] == \
+                        self.board_position[row_id-3][column]:
+                    w = self.board_position[row_id][column]
                 i = i + 1
-            # fill list with 'W' to easy horizontal and diagonal checks
-            for j in range(len(l),6):
-                l.append('W')
 
         # check horizontal
-        for b in range(col_heights[3]):
+        for row in range(center_height):
+            row_id = ROW_COUNT - 1 - row
             i = 0
             while i < 4:
-                if temp_board[i][b] == \
-                        temp_board[i+1][b] and temp_board[i][b] == \
-                        temp_board[i+2][b] and temp_board[i][b] == \
-                        temp_board[i+3][b]:
-                    w = temp_board[i][b]
+                if self.board_position[row_id][i] == \
+                        self.board_position[row_id][i+1] and self.board_position[row_id][i] == \
+                        self.board_position[row_id][i+2] and self.board_position[row_id][i] == \
+                        self.board_position[row_id][i+3]:
+                    w = self.board_position[row_id][i]
                 i = i + 1
 
         # check diagonal top-left bottom-right
-        for b in range(col_heights[3]):
-            for d in range(max(0, b-2), min(b+1, 4), 1):
-                if temp_board[d][b+3-d] == \
-                        temp_board[d+1][b+2-d] and temp_board[d][b+3-d] == \
-                        temp_board[d+2][b+1-d] and temp_board[d][b+3-d] == \
-                        temp_board[d+3][b-d]:
-                    w = temp_board[d][b+3-d]
+        for row in range(center_height):
+            row_id = ROW_COUNT - 1 - row
+            for d in range(max(0, row-2), min(row+1, 4), 1):
+                if self.board_position[row_id-3+d][d] == \
+                        self.board_position[row_id-2+d][d+1] and self.board_position[row_id-3+d][d] == \
+                        self.board_position[row_id-1+d][d+2] and self.board_position[row_id-3+d][d] == \
+                        self.board_position[row_id+d][d+3]:
+                    w = self.board_position[row_id-3+d][d]
 
         # check diagonal bottom-left top-right
-        for b in range(col_heights[3]):
-            for d in range(max(0, 3-b), min(6-b, 4), 1):
-                if temp_board[d][b+d-3] == \
-                        temp_board[d+1][b+d-2] and temp_board[d][b+d-3] == \
-                        temp_board[d+2][b+d-1] and temp_board[d][b+d-3] == \
-                        temp_board[d+3][b+d]:
-                    w = temp_board[d][b+d-3]
+        for row in range(center_height):
+            row_id = ROW_COUNT - 1 - row
+            for d in range(max(0, 3-row), min(6-row, 4), 1):
+                if self.board_position[row_id-d+3][d] == \
+                        self.board_position[row_id-d+2][d+1] and self.board_position[row_id-d+3][d] == \
+                        self.board_position[row_id-d+1][d+2] and self.board_position[row_id-d+3][d] == \
+                        self.board_position[row_id-d][d+3]:
+                    w = self.board_position[row_id-d+3][d]
         return w
+
+    def first_empty_row(self, board_column_id):
+        for row in range(ROW_COUNT-1,-1,-1):
+            if self.board_position[row][board_column_id] == 0:
+                return row
+        return -1
 
     def on_key_press(self, symbol, modifiers):
         if symbol == arcade.key.RIGHT and self.current_state == GAME_RUNNING:
-            self.player_position = min(self.player_position + 1, 7)
+            self.player_position = min(self.player_position + 1, COLUMN_COUNT)
         elif symbol == arcade.key.LEFT and self.current_state == GAME_RUNNING:
             self.player_position = max(self.player_position - 1, 1)
         elif symbol == arcade.key.DOWN and self.current_state == GAME_RUNNING:
-            if len(self.board_position[self.player_position - 1]) < 6:
-                self.play_piece()
+            open_row = self.first_empty_row(self.player_position - 1)
+            if open_row > -1:
+                self.play_piece(open_row, self.player_position - 1)
         elif symbol == arcade.key.ENTER: # and self.current_state == GAME_OVER:
             # Restart the game.
-            self.current_state = GAME_RUNNING
-            self.board_position = copy.deepcopy(self.start_position)
-            self.winner = None
             self.setup()
 
-    def play_piece(self):
-        if self.player_color == arcade.color.RED:
-            self.board_position[self.player_position - 1].append("R")
-            self.player_color = arcade.color.YELLOW
-        else:
-            self.board_position[self.player_position - 1].append("Y")
-            self.player_color = arcade.color.RED
+    def play_piece(self, row, column):
+        self.board_position[row][column] = self.current_player
+        i = row * COLUMN_COUNT + column
+        self.board_sprite_list[i].set_texture(self.current_player)
+
+        # switch player
+        self.current_player = 3 - self.current_player
 
         if self.announce_winner:
             self.winner = self.get_winner()
             if self.winner is not None:
                 self.current_state = GAME_OVER
 
-    def get_color(self, column_id, element_from_below):
-        column = self.board_position[column_id - 1]
-        if element_from_below > len(column):
-            return arcade.color.WHITE
-        else:
-            return self.get_color_from_char(column[element_from_below - 1])
-
-    def get_color_from_char(self, character_id) -> arcade.color:
-        if character_id == "Y":
-            return arcade.color.YELLOW
-        elif character_id == "R":
-            return arcade.color.RED
-        else:
-            return arcade.color.WHITE
 
 # main method
 def main():
-    starting_position = [[], [], [], [], [], [], []]
-    Connect4Game(WINDOW_WIDTH, int(WINDOW_WIDTH / 7 * 6),
+    Connect4Game(WINDOW_WIDTH, int(WINDOW_WIDTH / COLUMN_COUNT * ROW_COUNT),
                  'Connect4 Game Window',
-                 start_position=starting_position,
                  announce_winner=True)
     arcade.run()
 
