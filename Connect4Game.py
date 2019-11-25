@@ -11,9 +11,9 @@ COLUMN_COUNT = 7
 GAME_RUNNING = 1
 GAME_OVER = 2
 
-# first color is no piece played
-# second color is player one
-# third color is player two
+# first color is no piece played (0)
+# second color is player one (-1)
+# third color is player two (1)
 colors = [
           (255,   255, 255),
           (255,   0,   0),
@@ -197,7 +197,8 @@ class Connect4Game(arcade.Window):
             self.setup()
 
     def play_piece(self, row, column):
-        self.board_position[row][column] = self.current_player
+        # assign -1 for player 1 and +1 for player 2
+        self.board_position[row][column] = (self.current_player - 1.5) * 2
         i = row * COLUMN_COUNT + column
         self.board_sprite_list[i].set_texture(self.current_player)
 
