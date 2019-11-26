@@ -85,7 +85,7 @@ with tf.Session() as sess:
 
             # Get new state and reward from environment
             # initialize target
-#            targetQ = allQ
+            targetQ = allQ
             # Get new state and reward from environment
             if g.first_empty_row(a[0]) < 0:
                 targetQ[0, a[0]] = 0  # penalty for trying to play outside board
@@ -100,19 +100,22 @@ with tf.Session() as sess:
                 # Obtain maxQ' and set our target value for chosen action.
                 # maxQ1 = np.max(Q1)
                 maxQ1 = get_max_future_reward_previous_player(g)
-#                targetQ[0, a[0]] = r + y * maxQ1
+                targetQ[0, a[0]] = r + y * maxQ1
 
-            myBuffer.add(np.reshape(np.array([s, a, r, s1, d, maxQ1]), [1, 6]))
+            myBuffer.add(np.reshape(np.array([s, a, r, s1, d]), [1, 5]))
 
             if e > endE and total_steps > pre_train_steps:
                 e -= stepDrop
 
             if total_steps > pre_train_steps and total_steps % 20 == 0:
+                # We use Double-DQN training algorithm
                 trainBatch = myBuffer.sample(batch_size)
                 Q1 = sess.run(q_net.predict, feed_dict={q_net.inputs: np.vstack(trainBatch[:, 0]), q_net.keep_per: 1.0})
+                Q2 = sess.run(target_net.Q_out,
+                              feed_dict={target_net.inputs: np.vstack(trainBatch[:, 0]), target_net.keep_per: 1.0})
                 end_multiplier = -(trainBatch[:, 4] - 1)
-                maxQ = trainBatch[:, 5]
-                targetQ = trainBatch[:, 2] + (y * maxQ * end_multiplier)
+                doubleQ = Q2[range(batch_size), Q1]
+                targetQ = trainBatch[:, 2] + (y * doubleQ * end_multiplier)
                 _ = sess.run(q_net.updateModel,
                              feed_dict={q_net.inputs: np.vstack(trainBatch[:, 0]), q_net.nextQ: targetQ,
                                         q_net.keep_per: 1.0, q_net.actions: trainBatch[:, 1]})

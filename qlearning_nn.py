@@ -23,14 +23,15 @@ def play_and_save_game(sess, filename):
     j = 0
     bList = []
     allQList = []
-    while j < 500 and not d and np.sum(open_actions(g)) > 0:
+    while j < 50 and not d and np.sum(open_actions(g)) > 0:
         j += 1
         s = get_state(g)
-        # Choose an action using a sample from a dropout approximation of a bayesian q-network.
-        a, allQ = sess.run([predict, Qout], feed_dict={inputs1: s, action_filter: np.diag(open_actions(g))})
+
+        a_sort, allQ = sess.run([pred_sort, Qout], feed_dict={inputs1: s})
+        a = a_sort[0, 0]
         print(open_actions(g))
-        print("{0}: {1} / {2}".format(j, a[0], g.first_empty_row(a[0])))
-        g.play_piece(g.first_empty_row(a[0]), a[0])
+        print("{0}: {1} / {2}".format(j, a, g.first_empty_row(a)))
+        g.play_piece(g.first_empty_row(a), a)
         d = g.current_state == Connect4Game.GAME_OVER
 
         bList.append(copy.deepcopy(g.board_position))
@@ -43,14 +44,25 @@ def play_and_save_game(sess, filename):
     return g, bList, allQList
 
 
+def rand_index_filter(filter):
+    f_idx = np.random.randint(np.sum(filter))
+#    idx = 0
+#    while f_idx > 0:
+#        if filter[idx] == 1:
+#            f_idx = f_idx - 1
+#        idx = idx + 1
+#    return idx
+    return np.where(filter == 1)[0][f_idx]
+
 tf.reset_default_graph()
 # These lines establish the feed-forward part of the network used to choose actions
 inputs1 = tf.placeholder(shape=[1, input_length], dtype=tf.float32)
 W = tf.Variable(tf.random_uniform([input_length, Connect4Game.COLUMN_COUNT], 0.001, 0.01))
-action_filter = tf.placeholder(shape=[Connect4Game.COLUMN_COUNT, Connect4Game.COLUMN_COUNT], dtype=tf.float32)
+# action_filter = tf.placeholder(shape=[Connect4Game.COLUMN_COUNT, Connect4Game.COLUMN_COUNT], dtype=tf.float32)
 Qout = tf.matmul(inputs1, W)
-Qout = tf.matmul(Qout, action_filter)
-predict = tf.argmax(Qout, 1)
+# Qout2 = tf.matmul(Qout, action_filter)
+pred_sort = tf.argsort(Qout, 1, direction='DESCENDING')
+# predict = tf.argmax(Qout2, 1)
 
 # Below we obtain the loss by taking the sum of squares difference between the target and prediction Q values.
 nextQ = tf.placeholder(shape=[1, Connect4Game.COLUMN_COUNT], dtype=tf.float32)
@@ -62,9 +74,9 @@ updateModel = trainer.minimize(loss)
 init = tf.global_variables_initializer()
 
 # Set learning parameters
-y = .3
+y = .5
 e_init = 1
-num_episodes = 50
+num_episodes = 10000
 # create lists to contain total rewards and steps per episode
 jList = []
 rList = []
@@ -82,21 +94,34 @@ with tf.Session() as sess:
         while j < 100 and not d and np.sum(open_actions(g)) > 0:
             j += 1
 
+            filter = open_actions(g)
             s = get_state(g)
             # Choose an action by greedily (with e chance of random action) from the Q-network
-            a, allQ = sess.run([predict, Qout], feed_dict={inputs1: s, action_filter: np.diag(open_actions(g))})
+            a_sort, allQ = sess.run([pred_sort, Qout], feed_dict={inputs1: s})
+            # full random
             if np.random.rand(1) < e:
-                a[0] = np.random.randint(Connect4Game.COLUMN_COUNT)
+                a = rand_index_filter(filter)
+            else: # greedy
+                # multiple best
+                a_bestv = allQ[0, a_sort[0, 0]]
+                filter2 = np.logical_and(allQ.flatten() == a_bestv, filter)
+                if np.sum(filter2) > 0:
+                    a = rand_index_filter(filter2)
+                else:
+                    # if none best are in filter, select the best remaining in filter
+                    for idx in range(Connect4Game.COLUMN_COUNT):
+                        if filter[a_sort[0,idx]] == 1:
+                            a = a_sort[0,idx]
+
             # initialize target
             targetQ = allQ
-            # if np.random.rand(1) < e:
-            #    a[0] = env.action_space.sample()
             # Get new state and reward from environment
-            if g.first_empty_row(a[0]) < 0:
+            if g.first_empty_row(a) < 0:
                 # continue
-                targetQ[0, a[0]] = 0  # penalty for trying to play outside board
+                targetQ[0, a] = 0  # penalty for trying to play outside board
+                r = 0
             else:
-                g.play_piece(g.first_empty_row(a[0]), a[0])
+                g.play_piece(g.first_empty_row(a), a)
                 s1 = get_state(g)
                 r = get_reward(g)
                 d = g.current_state == Connect4Game.GAME_OVER
@@ -106,10 +131,10 @@ with tf.Session() as sess:
                 # Obtain maxQ' and set our target value for chosen action.
                 # maxQ1 = np.max(Q1)
                 maxQ1 = get_max_future_reward_previous_player(g)
-                targetQ[0, a[0]] = r + y * maxQ1
+                targetQ[0, a] = r + y * maxQ1
 
             # Train our network using target and predicted Q values
-            _, W1 = sess.run([updateModel, W], feed_dict={inputs1: s1, action_filter: np.identity(7), nextQ: targetQ})
+            _, W1 = sess.run([updateModel, W], feed_dict={inputs1: s1, nextQ: targetQ})
             rAll += r
             # s = s1
 
