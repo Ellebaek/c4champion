@@ -23,6 +23,10 @@ class Connect4StateExplorerWindow(Connect4GameWindow):
         arcade.start_render()
         self.shape_list.draw()
         self.board_sprite_list.draw()
+        arcade.draw_text("{0} of {1}".format(self.current_state_id, len(self.board_sequence)-1),
+                         self.width / 2 - 100,
+                         self.height - 25,
+                         arcade.color.BLACK, 20)
 
     def on_key_press(self, symbol, modifiers):
         if symbol == arcade.key.RIGHT:
@@ -34,9 +38,11 @@ class Connect4StateExplorerWindow(Connect4GameWindow):
         board = self.board_sequence[self.current_state_id]
         for row in range(Connect4Game.ROW_COUNT):
             for column in range(Connect4Game.COLUMN_COUNT):
+                i = row * Connect4Game.COLUMN_COUNT + column
                 if board[row][column] != 0:
-                    i = row * Connect4Game.COLUMN_COUNT + column
                     self.board_sprite_list[i].set_texture(int((board[row][column] + 3) / 2))
+                else:
+                    self.board_sprite_list[i].set_texture(0)
 
     def play_piece(self, row, column):
         pass
