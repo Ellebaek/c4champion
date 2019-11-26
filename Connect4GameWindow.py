@@ -5,25 +5,27 @@ from Connect4Game import Connect4Game
 
 WINDOW_WIDTH = 700
 MARGIN_PERCENTAGE = 0.1
-#ROW_COUNT = 6
-#COLUMN_COUNT = 7
+# ROW_COUNT = 6
+# COLUMN_COUNT = 7
 
 # game "states"
-#GAME_RUNNING = 1
-#GAME_OVER = 2
+# GAME_RUNNING = 1
+# GAME_OVER = 2
 
 # first color is no piece played (0)
 # second color is player one (-1)
 # third color is player two (1)
 colors = [
-          (255,   255, 255),
-          (255,   0,   0),
-          (255, 255, 0)
-          ]
+    (255, 255, 255),
+    (255, 0, 0),
+    (255, 255, 0)
+]
+
 
 class Connect4GameWindow(arcade.Window):
-    def __init__(self, width, height, title, announce_winner=False):
-        super().__init__(width, height, title)
+    def __init__(self, width, announce_winner=False):
+        height = int(width / Connect4Game.COLUMN_COUNT * Connect4Game.ROW_COUNT)
+        super().__init__(width, height, 'Connect4 Game Window')
         self.set_location(200, 100)
         self.left_margin = self.width * MARGIN_PERCENTAGE / 2
         self.top_margin = self.height * MARGIN_PERCENTAGE / 2
@@ -34,21 +36,23 @@ class Connect4GameWindow(arcade.Window):
         self.player_position = 4
         self.current_game = None
         self.current_player = 1
-        #self.board_position = None
+        # self.board_position = None
         self.shape_list = None
         self.board_sprite_list = None
 
         self.announce_winner = announce_winner
-        #self.winner = None
+        # self.winner = None
         self.setup()
 
     def create_textures(self):
         """ Create a list of images for sprites based on the global colors. """
         new_textures = []
         for color in colors:
-            image = PIL.Image.new('RGBA', (int(self.circle_max_radius*2), int(self.circle_max_radius*2)), (255, 255, 255, 0))
+            image = PIL.Image.new('RGBA', (int(self.circle_max_radius * 2), int(self.circle_max_radius * 2)),
+                                  (255, 255, 255, 0))
             draw = ImageDraw.Draw(image)
-            draw.ellipse((self.circle_max_radius*2*0.1, self.circle_max_radius*2*0.1, self.circle_max_radius*2 * 0.9, self.circle_max_radius*2 * 0.9), fill=color)
+            draw.ellipse((self.circle_max_radius * 2 * 0.1, self.circle_max_radius * 2 * 0.1,
+                          self.circle_max_radius * 2 * 0.9, self.circle_max_radius * 2 * 0.9), fill=color)
             new_textures.append(arcade.Texture(str(color), image=image))
         return new_textures
 
@@ -115,12 +119,12 @@ class Connect4GameWindow(arcade.Window):
 
     def draw_game_over(self):
         arcade.draw_text("Game Over",
-                         self.width/2 - 150,
-                         self.height/2,
+                         self.width / 2 - 150,
+                         self.height / 2,
                          arcade.color.BLACK_OLIVE, 54)
         arcade.draw_text("Press ENTER to restart",
-                         self.width/2 - 150,
-                         self.height/2 - 50,
+                         self.width / 2 - 150,
+                         self.height / 2 - 50,
                          arcade.color.BLACK_OLIVE, 28)
 
     def get_winner(self):
@@ -133,9 +137,9 @@ class Connect4GameWindow(arcade.Window):
             while i <= height - 4:
                 row_id = Connect4Game.ROW_COUNT - 1 - i
                 if self.board_position[row_id][column] == \
-                        self.board_position[row_id-1][column] and self.board_position[row_id][column] == \
-                        self.board_position[row_id-2][column] and self.board_position[row_id][column] == \
-                        self.board_position[row_id-3][column]:
+                        self.board_position[row_id - 1][column] and self.board_position[row_id][column] == \
+                        self.board_position[row_id - 2][column] and self.board_position[row_id][column] == \
+                        self.board_position[row_id - 3][column]:
                     w = self.board_position[row_id][column]
                 i = i + 1
 
@@ -145,31 +149,31 @@ class Connect4GameWindow(arcade.Window):
             i = 0
             while i < 4:
                 if self.board_position[row_id][i] == \
-                        self.board_position[row_id][i+1] and self.board_position[row_id][i] == \
-                        self.board_position[row_id][i+2] and self.board_position[row_id][i] == \
-                        self.board_position[row_id][i+3]:
+                        self.board_position[row_id][i + 1] and self.board_position[row_id][i] == \
+                        self.board_position[row_id][i + 2] and self.board_position[row_id][i] == \
+                        self.board_position[row_id][i + 3]:
                     w = self.board_position[row_id][i]
                 i = i + 1
 
         # check diagonal top-left bottom-right
         for row in range(center_height):
             row_id = Connect4Game.ROW_COUNT - 1 - row
-            for d in range(max(0, row-2), min(row+1, 4), 1):
-                if self.board_position[row_id-3+d][d] == \
-                        self.board_position[row_id-2+d][d+1] and self.board_position[row_id-3+d][d] == \
-                        self.board_position[row_id-1+d][d+2] and self.board_position[row_id-3+d][d] == \
-                        self.board_position[row_id+d][d+3]:
-                    w = self.board_position[row_id-3+d][d]
+            for d in range(max(0, row - 2), min(row + 1, 4), 1):
+                if self.board_position[row_id - 3 + d][d] == \
+                        self.board_position[row_id - 2 + d][d + 1] and self.board_position[row_id - 3 + d][d] == \
+                        self.board_position[row_id - 1 + d][d + 2] and self.board_position[row_id - 3 + d][d] == \
+                        self.board_position[row_id + d][d + 3]:
+                    w = self.board_position[row_id - 3 + d][d]
 
         # check diagonal bottom-left top-right
         for row in range(center_height):
             row_id = Connect4Game.ROW_COUNT - 1 - row
-            for d in range(max(0, 3-row), min(6-row, 4), 1):
-                if self.board_position[row_id-d+3][d] == \
-                        self.board_position[row_id-d+2][d+1] and self.board_position[row_id-d+3][d] == \
-                        self.board_position[row_id-d+1][d+2] and self.board_position[row_id-d+3][d] == \
-                        self.board_position[row_id-d][d+3]:
-                    w = self.board_position[row_id-d+3][d]
+            for d in range(max(0, 3 - row), min(6 - row, 4), 1):
+                if self.board_position[row_id - d + 3][d] == \
+                        self.board_position[row_id - d + 2][d + 1] and self.board_position[row_id - d + 3][d] == \
+                        self.board_position[row_id - d + 1][d + 2] and self.board_position[row_id - d + 3][d] == \
+                        self.board_position[row_id - d][d + 3]:
+                    w = self.board_position[row_id - d + 3][d]
         return w
 
     # def first_empty_row(self, board_column_id):
@@ -187,7 +191,7 @@ class Connect4GameWindow(arcade.Window):
             open_row = self.current_game.first_empty_row(self.player_position - 1)
             if open_row > -1:
                 self.play_piece(open_row, self.player_position - 1)
-        elif symbol == arcade.key.ENTER: # and self.current_state == GAME_OVER:
+        elif symbol == arcade.key.ENTER:  # and self.current_state == GAME_OVER:
             # Restart the game.
             self.setup()
 
@@ -202,11 +206,10 @@ class Connect4GameWindow(arcade.Window):
         # switch player
         self.current_player = 3 - self.current_player
 
+
 # main method
 def main():
     Connect4GameWindow(WINDOW_WIDTH,
-                       int(WINDOW_WIDTH / Connect4Game.COLUMN_COUNT * Connect4Game.ROW_COUNT),
-                       'Connect4 Game Window',
                        announce_winner=True)
     arcade.run()
 
