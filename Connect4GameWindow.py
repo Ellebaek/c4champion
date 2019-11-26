@@ -35,7 +35,7 @@ class Connect4GameWindow(arcade.Window):
         self.texture_list = self.create_textures()
         self.player_position = 4
         self.current_game = None
-        self.current_player = 1
+        #self.current_player = 1
         # self.board_position = None
         self.shape_list = None
         self.board_sprite_list = None
@@ -115,7 +115,7 @@ class Connect4GameWindow(arcade.Window):
         arcade.draw_triangle_filled(cursor_position - self.circle_max_radius, self.height,
                                     cursor_position + self.circle_max_radius, self.height,
                                     cursor_position, self.height - self.top_margin,
-                                    colors[self.current_player])
+                                    colors[self.current_game.current_player])
 
     def draw_game_over(self):
         arcade.draw_text("Game Over",
@@ -196,16 +196,12 @@ class Connect4GameWindow(arcade.Window):
             self.setup()
 
     def play_piece(self, row, column):
-        self.current_game.play_piece(row, column)
-        # assign -1 for player 1 and +1 for player 2
-        # self.board_position[row][column] = (self.current_player - 1.5) * 2
-
+        # update UI
         i = row * Connect4Game.COLUMN_COUNT + column
-        self.board_sprite_list[i].set_texture(self.current_player)
+        self.board_sprite_list[i].set_texture(self.current_game.current_player)
 
-        # switch player
-        self.current_player = 3 - self.current_player
-
+        # update underlying game and switch player
+        self.current_game.play_piece(row, column)
 
 # main method
 def main():
