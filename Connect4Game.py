@@ -58,7 +58,7 @@ class Connect4Game():
         for column in range(self.COLUMN_COUNT):
             height = self.ROW_COUNT - 1  # - self.first_empty_row(column)
             i = 0
-            while i <= height - 4:
+            while i <= height - 3:
                 row_id = self.ROW_COUNT - 1 - i
                 strip_eval = self.evaluate_strip(self.board_position[row_id][column],
                                                  self.board_position[row_id-1][column],
