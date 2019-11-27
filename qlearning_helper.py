@@ -9,9 +9,8 @@ def open_actions(c4game):
     return np.array(oa)
 
 def get_state(c4game):
-    board = np.array(c4game.board_position).reshape((1, input_length))
-    # board = [[c4game.board_position[_r][_c] for _c in range(c4game.COLUMN_COUNT)] for _r in range(c4game.ROW_COUNT)]
-    return board
+    board = np.array(c4game.board_position)  + 0.01
+    return board.reshape((1, input_length))
 
 
 def get_reward(c4game):
