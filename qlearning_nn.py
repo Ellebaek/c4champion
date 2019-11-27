@@ -46,13 +46,9 @@ def play_and_save_game(sess, filename):
 
 def rand_index_filter(filter):
     f_idx = np.random.randint(np.sum(filter))
-#    idx = 0
-#    while f_idx > 0:
-#        if filter[idx] == 1:
-#            f_idx = f_idx - 1
-#        idx = idx + 1
-#    return idx
     return np.where(filter == 1)[0][f_idx]
+
+
 
 tf.reset_default_graph()
 # These lines establish the feed-forward part of the network used to choose actions
@@ -76,7 +72,7 @@ init = tf.global_variables_initializer()
 # Set learning parameters
 y = .5
 e_init = 1
-num_episodes = 10000
+num_episodes = 1000
 # create lists to contain total rewards and steps per episode
 jList = []
 rList = []
@@ -84,7 +80,8 @@ with tf.Session() as sess:
     sess.run(init)
     for i in range(num_episodes):
         e = e_init * 1. / log(i / 10 + exp(1))
-        print("Episode: " + str(i) + " E: " + str(e))
+        if i % 100 == 0:
+            print("Episode: " + str(i) + " E: " + str(e))
         # Reset environment and get first new observation
         g = Connect4Game(announce_winner=True)
         rAll = 0
