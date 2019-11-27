@@ -1,5 +1,4 @@
 import tensorflow as tf
-import tensorflow.contrib.slim as slim
 from Connect4Game import Connect4Game
 
 
@@ -31,3 +30,4 @@ class Q_Network():
         loss = tf.reduce_sum(tf.square(self.nextQ - self.Q))
         trainer = tf.train.GradientDescentOptimizer(learning_rate=0.0005)
         self.updateModel = trainer.minimize(loss)
+
