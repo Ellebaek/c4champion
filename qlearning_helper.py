@@ -9,12 +9,12 @@ def open_actions(c4game):
     return np.array(oa)
 
 def get_state(c4game):
-    board = np.array(c4game.board_position)  + 0.01
+    board = np.array(c4game.board_position) + 0.01
     return board.reshape((1, input_length))
 
 
 def get_reward(c4game):
-    rew = -0.01
+    rew = 0.01
     if c4game.current_state == Connect4Game.GAME_OVER:
         rew = 1
     return rew
