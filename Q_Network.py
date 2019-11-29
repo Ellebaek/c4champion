@@ -1,6 +1,6 @@
 import tensorflow as tf
 from Connect4Game import Connect4Game
-
+import tensorflow.contrib.slim as slim
 
 class Q_Network():
     input_length = Connect4Game.ROW_COUNT * Connect4Game.COLUMN_COUNT
@@ -9,14 +9,12 @@ class Q_Network():
         # These lines establish the feed-forward part of the network used to choose actions
         self.inputs = tf.placeholder(shape=[None, self.input_length], dtype=tf.float32)
         self.Temp = tf.placeholder(shape=None, dtype=tf.float32)
-        self.keep_per = tf.placeholder(shape=None, dtype=tf.float32)
-        self.action_filter = tf.placeholder(shape=[Connect4Game.COLUMN_COUNT, Connect4Game.COLUMN_COUNT], dtype=tf.float32)
+        # self.keep_per = tf.placeholder(shape=None, dtype=tf.float32)
 
         hidden = slim.fully_connected(self.inputs, 32, activation_fn=tf.nn.tanh, biases_initializer=None)
-        hidden = slim.dropout(hidden, self.keep_per)
+        # hidden = slim.dropout(hidden, self.keep_per)
         self.Q_out = slim.fully_connected(hidden, Connect4Game.COLUMN_COUNT, activation_fn=None,
                                           biases_initializer=None)
-        self.Q_out = tf.matmul(self.Q_out, action_filter)
         self.predict = tf.argmax(self.Q_out, 1)
         self.Q_dist = tf.nn.softmax(self.Q_out / self.Temp)
 

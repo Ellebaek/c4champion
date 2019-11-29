@@ -1,5 +1,7 @@
 import tensorflow as tf
+import tensorflow.contrib.slim as slim
 from Connect4Game import Connect4Game
+
 
 
 class SimpleC4Agent():
@@ -7,9 +9,12 @@ class SimpleC4Agent():
 
     def __init__(self, name):
         self.name = name
-        self.inputs1 = tf.placeholder(shape=[1, self.input_length], dtype=tf.float32)
+        self.inputs = tf.compat.v1.placeholder(shape=[1, self.input_length], dtype=tf.float32)
+        # keep_pct is not used in SimpleAgent, but added to ease transition Simple <-> Deep agent
+        self.keep_pct = tf.compat.v1.placeholder(shape=None, dtype=tf.float32)
         self.W = tf.Variable(tf.random_uniform([self.input_length, Connect4Game.COLUMN_COUNT], 0.001, 0.01))
-        self.Qout = tf.matmul(self.inputs1, self.W)
+
+        self.Qout = tf.matmul(self.inputs, self.W)
         #self.pred_sort = tf.argsort(self.Qout, 1, direction='DESCENDING')
 
         # Below we obtain the loss by taking the sum of squares difference between the target and prediction Q values.

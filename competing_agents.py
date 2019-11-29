@@ -2,6 +2,7 @@ from math import log, exp
 from qlearning_helper import open_actions, get_state, get_reward, get_max_future_reward_previous_player
 from qlearning_helper import input_length
 from SimpleC4Agent import SimpleC4Agent
+from DeepC4Agent import DeepC4Agent
 from Connect4Game import Connect4Game
 import numpy as np
 import tensorflow as tf
@@ -39,6 +40,8 @@ def train_agent(sess, agent, opponent):
     agents_turn_to_start = False
     for i in range(num_episodes):
         e = e_init * 1. / log(i / 10 + exp(1))
+        e2 = 0.30
+        e3 = 0.10
         if i % 100 == 0:
             print("Training {0}   Episode: {1} E: {2}".format(agent.name, i, e))
         # Reset environment and get first new observation
@@ -55,10 +58,10 @@ def train_agent(sess, agent, opponent):
             filter = open_actions(g)
             s = get_state(g)
             if agents_turn or opponent is None:
-                # Choose an action by greedily (with e chance of random action) from the Q-network
-                allQ = sess.run(agent.Qout, feed_dict={agent.inputs1: s})
-                # full random
+                # Choose an action
+                allQ = sess.run(agent.Qout, feed_dict={agent.inputs: s, agent.keep_pct: 1})
                 if np.random.rand(1) < e:
+                    # full random
                     a = rand_index_filter(filter)
                 else:  # greedy
                     a = best_allowed_action(allQ, filter, 1)
@@ -80,14 +83,21 @@ def train_agent(sess, agent, opponent):
                     targetQ[0, a] = r + y * maxQ1
 
                     # Train our network using target and predicted Q values
-                    _, W1 = sess.run([agent.updateModel, agent.W], feed_dict={agent.inputs1: s1, agent.nextQ: targetQ})
+                    _ = sess.run(agent.updateModel, feed_dict={agent.inputs: s1, agent.keep_pct: 1, agent.nextQ: targetQ})
                     rAll += r
 
                 jList.append(j)
                 rList.append(rAll)
             else:  # opponents turn
-                allQ = sess.run(opponent.Qout, feed_dict={opponent.inputs1: s})
-                a = best_allowed_action(allQ, filter, 1)
+                allQ = sess.run(opponent.Qout, feed_dict={opponent.inputs: s, opponent.keep_pct: 1})
+                top = 1
+                # introduce some random behaviour, deterministic player is too easy to learn to beat
+                randval = np.random.rand(1)
+                if randval > e2:
+                    top = 1
+                elif randval > e3:
+                    top = 1
+                a = best_allowed_action(allQ, filter, top)
                 g.play_piece(g.first_empty_row(a), a)
 
 
@@ -116,10 +126,10 @@ def compete_and_return_score_list(sess, agent1, agent2, num_games):
                 top = 2
                 # a = rand_index_filter(filter)
             if agent1s_turn:
-                allQ = sess.run(agent1.Qout, feed_dict={agent1.inputs1: s})
+                allQ = sess.run(agent1.Qout, feed_dict={agent1.inputs: s, agent1.keep_pct: 1})
                 a = best_allowed_action(allQ, filter, top)
             else:
-                allQ = sess.run(agent2.Qout, feed_dict={agent2.inputs1: s})
+                allQ = sess.run(agent2.Qout, feed_dict={agent2.inputs: s, agent2.keep_pct: 1})
                 a = best_allowed_action(allQ, filter, top)
 
             g.play_piece(g.first_empty_row(a), a)
@@ -151,10 +161,10 @@ def duel_and_save_games(sess, agent1, agent2, duelname):
             s = get_state(g)
             filter = open_actions(g)
             if agent1s_turn:
-                allQ = sess.run(agent1.Qout, feed_dict={agent1.inputs1: s})
+                allQ = sess.run(agent1.Qout, feed_dict={agent1.inputs: s, agent1.keep_pct: 1})
                 a = best_allowed_action(allQ, filter, 1)
             else:
-                allQ = sess.run(agent2.Qout, feed_dict={agent2.inputs1: s})
+                allQ = sess.run(agent2.Qout, feed_dict={agent2.inputs: s, agent2.keep_pct: 1})
                 a = best_allowed_action(allQ, filter, 1)
 
             g.play_piece(g.first_empty_row(a), a)
@@ -181,18 +191,18 @@ def rand_index_filter(filter):
     return np.where(filter == 1)[0][f_idx]
 
 
-num_iterations = 5
-num_episodes = 100
+num_iterations = 7
+num_episodes = 500
 trial_length = 100
 y = .5
 e_init = 1
-save_game_list = [2, num_iterations]
+final_challenger_id = 2
 
 tf.compat.v1.reset_default_graph()
 
 challenger_list = []
 for i in range(num_iterations + 1):
-    challenger_list.append(SimpleC4Agent("Agent{0}".format(i)))
+    challenger_list.append(DeepC4Agent("Agent{0}".format(i)))
 
 init = tf.compat.v1.global_variables_initializer()
 
@@ -204,7 +214,7 @@ with tf.compat.v1.Session() as sess:
     # train first opponent: Agent0
     train_agent(sess, CHAMPION, None)
 
-    e_init = 0.5
+    e_init = 1
     # train with competition
     for i in range(1, num_iterations + 1, 1):
         CHALLENGER = challenger_list[i]
@@ -219,12 +229,9 @@ with tf.compat.v1.Session() as sess:
                                                                              draws))
         if score > 0:
             CHAMPION = CHALLENGER
-            CHALLENGER = SimpleC4Agent("Agent{0}".format(i))
-        else:
-            CHALLENGER = SimpleC4Agent("Agent{0}".format(i))
 
     # let selected models compete and save games
-    duel_result = duel_and_save_games(sess, challenger_list[2], CHAMPION, "duel_5x100")
+    duel_result = duel_and_save_games(sess, challenger_list[final_challenger_id], CHAMPION, "duel_{0}x{1}".format(num_iterations,num_episodes))
     print(duel_result)
     #    f = open(filename, "w+")
     #    for board in bList:
