@@ -42,8 +42,10 @@ def train_agent(sess, agent, opponent):
         e = e_init * 1. / log(i / 10 + exp(1))
         e2 = 0.30
         e3 = 0.10
-        if i % 100 == 0:
-            print("Training {0}   Episode: {1} E: {2}".format(agent.name, i, e))
+        if i % 10 == 9:
+            print("Training {0}   Episode: {1} E: {2:.3f} J: {3:.3f} R: {4:.3f}".format(agent.name, i, e, np.mean(jList), np.mean(rList)))
+            jList = []
+            rList = []
         # Reset environment and get first new observation
         g = Connect4Game(announce_winner=True)
         rAll = 0
@@ -69,25 +71,23 @@ def train_agent(sess, agent, opponent):
                 # initialize target
                 targetQ = allQ
                 # Get new state and reward from environment
-                if g.first_empty_row(a) < 0:
+                #if g.first_empty_row(a) < 0:
                     # continue
-                    targetQ[0, a] = 0  # penalty for trying to play outside board
-                    r = 0
-                else:
-                    g.play_piece(g.first_empty_row(a), a)
-                    s1 = get_state(g)
-                    r = get_reward(g)
-                    d = g.current_state == Connect4Game.GAME_OVER
+                #    targetQ[0, a] = 0  # penalty for trying to play outside board
+                #    r = 0
+                #else:
+                g.play_piece(g.first_empty_row(a), a)
+                s1 = get_state(g)
+                r = get_reward(g)
+                d = g.current_state == Connect4Game.GAME_OVER
 
-                    maxQ1 = get_max_future_reward_previous_player(g)
-                    targetQ[0, a] = r + y * maxQ1
+                maxQ1 = get_max_future_reward_previous_player(g)
+                targetQ[0, a] = r + y * maxQ1
 
-                    # Train our network using target and predicted Q values
-                    _ = sess.run(agent.updateModel, feed_dict={agent.inputs: s1, agent.keep_pct: 1, agent.nextQ: targetQ})
-                    rAll += r
+                # Train our network using target and predicted Q values
+                _ = sess.run(agent.updateModel, feed_dict={agent.inputs: s1, agent.keep_pct: 1, agent.nextQ: targetQ})
+                rAll += r
 
-                jList.append(j)
-                rList.append(rAll)
             else:  # opponents turn
                 allQ = sess.run(opponent.Qout, feed_dict={opponent.inputs: s, opponent.keep_pct: 1})
                 top = 1
@@ -99,6 +99,9 @@ def train_agent(sess, agent, opponent):
                     top = 1
                 a = best_allowed_action(allQ, filter, top)
                 g.play_piece(g.first_empty_row(a), a)
+
+        jList.append(j)
+        rList.append(rAll)
 
 
 def compete_and_return_score_list(sess, agent1, agent2, num_games):
@@ -191,8 +194,8 @@ def rand_index_filter(filter):
     return np.where(filter == 1)[0][f_idx]
 
 
-num_iterations = 7
-num_episodes = 500
+num_iterations = 3
+num_episodes = 100
 trial_length = 100
 y = .5
 e_init = 1
@@ -214,7 +217,7 @@ with tf.compat.v1.Session() as sess:
     # train first opponent: Agent0
     train_agent(sess, CHAMPION, None)
 
-    e_init = 1
+    e_init = 0.5
     # train with competition
     for i in range(1, num_iterations + 1, 1):
         CHALLENGER = challenger_list[i]
