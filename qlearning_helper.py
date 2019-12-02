@@ -27,9 +27,24 @@ def get_max_future_reward_previous_player(c4game):
     if c4game.current_state == c4game.GAME_RUNNING:
         evaluation = c4game.evaluate_board()
         if evaluation[c4game.previous_player * 2 - 1]:
-            rew = 0.9
-            if not evaluation[c4game.current_player * 2 - 1]:
-                rew = 1
+            rew = 1
+#            if not evaluation[c4game.current_player * 2 - 1]:
+#                rew = 1
+        else:
+            rew = 0.5
+    return rew
+
+
+def get_max_future_reward_current_player(c4game):
+    rew = 0
+    # TODO: consider checking for only one spot left
+
+    if c4game.current_state == c4game.GAME_RUNNING:
+        evaluation = c4game.evaluate_board()
+        if evaluation[c4game.current_player * 2 - 1]:
+            rew = 1
+            #if not evaluation[c4game.current_player * 2 - 1]:
+            #    rew = 1
         else:
             rew = 0.5
     return rew
