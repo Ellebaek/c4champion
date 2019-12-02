@@ -1,6 +1,6 @@
 from math import log, exp
 from qlearning_helper import open_actions, get_state, get_reward, get_max_future_reward_previous_player
-from qlearning_helper import input_length
+from qlearning_helper import get_max_future_reward_current_player
 from SimpleC4Agent import SimpleC4Agent
 from DeepC4Agent import DeepC4Agent
 from Connect4Game import Connect4Game
@@ -42,24 +42,36 @@ def train_agent(sess, agent, opponent):
         e = e_init * 1. / log(i / 10 + exp(1))
         e2 = 0.30
         e3 = 0.10
-        if i % 10 == 9:
-            print("Training {0}   Episode: {1} E: {2:.3f} J: {3:.3f} R: {4:.3f}".format(agent.name, i, e, np.mean(jList), np.mean(rList)))
-            jList = []
-            rList = []
         # Reset environment and get first new observation
         g = Connect4Game(announce_winner=True)
         rAll = 0
-        d = False
         j = 0
         agents_turn_to_start = not agents_turn_to_start
-        agents_turn = not agents_turn_to_start
-        # The game training
-        while j < 100 and np.sum(open_actions(g)) > 0 and not d:
-            agents_turn = not agents_turn
-            j += 1
+        # agents_turn = not agents_turn_to_start
+        if opponent is not None and not agents_turn_to_start:
+            # let opponent play first move
             filter = open_actions(g)
             s = get_state(g)
-            if agents_turn or opponent is None:
+            allQopp = sess.run(opponent.Qout, feed_dict={opponent.inputs: s, opponent.keep_pct: 1})
+            top = 1
+            # introduce some random behaviour, deterministic player is too easy to learn to beat
+            randval = np.random.rand(1)
+            if randval > e2:
+                top = 1
+            elif randval > e3:
+                top = 1
+            a = best_allowed_action(allQopp, filter, top)
+            g.play_piece(g.first_empty_row(a), a)
+
+        # The game training
+        while j < 100 and g.current_state == g.GAME_RUNNING:
+            filter = open_actions(g)
+            s = get_state(g)
+            targetQ = np.zeros((1, Connect4Game.COLUMN_COUNT))
+
+            # agent
+            if np.sum(open_actions(g)) > 0 and g.current_state == g.GAME_RUNNING:
+                j += 1
                 # Choose an action
                 allQ = sess.run(agent.Qout, feed_dict={agent.inputs: s, agent.keep_pct: 1})
                 if np.random.rand(1) < e:
@@ -70,6 +82,7 @@ def train_agent(sess, agent, opponent):
 
                 # initialize target
                 targetQ = allQ
+
                 # Get new state and reward from environment
                 #if g.first_empty_row(a) < 0:
                     # continue
@@ -77,19 +90,16 @@ def train_agent(sess, agent, opponent):
                 #    r = 0
                 #else:
                 g.play_piece(g.first_empty_row(a), a)
-                s1 = get_state(g)
+                # s1 = get_state(g)
                 r = get_reward(g)
-                d = g.current_state == Connect4Game.GAME_OVER
 
+                # set expectations in case opponent is not allowed to play or do not exist
                 maxQ1 = get_max_future_reward_previous_player(g)
-                targetQ[0, a] = r + y * maxQ1
 
-                # Train our network using target and predicted Q values
-                _ = sess.run(agent.updateModel, feed_dict={agent.inputs: s1, agent.keep_pct: 1, agent.nextQ: targetQ})
-                rAll += r
-
-            else:  # opponents turn
-                allQ = sess.run(opponent.Qout, feed_dict={opponent.inputs: s, opponent.keep_pct: 1})
+            # then opponent
+            if opponent is not None and np.sum(open_actions(g)) > 0 and g.current_state == g.GAME_RUNNING:
+                j += 1
+                allQopp = sess.run(opponent.Qout, feed_dict={opponent.inputs: s, opponent.keep_pct: 1})
                 top = 1
                 # introduce some random behaviour, deterministic player is too easy to learn to beat
                 randval = np.random.rand(1)
@@ -97,11 +107,29 @@ def train_agent(sess, agent, opponent):
                     top = 1
                 elif randval > e3:
                     top = 1
-                a = best_allowed_action(allQ, filter, top)
+                a = best_allowed_action(allQopp, filter, top)
                 g.play_piece(g.first_empty_row(a), a)
+                op_rew = get_reward(g)
+
+                r = r - 0.9*op_rew
+
+                # update expectations in case opponent was allowed to move
+                maxQ1 = get_max_future_reward_current_player(g)
+
+            # update after opponent have played
+            targetQ[0, a] = r + y * maxQ1
+
+            # Train our network using target and predicted Q values
+            # Changed from s1 to s
+            _ = sess.run(agent.updateModel, feed_dict={agent.inputs: s, agent.keep_pct: 1, agent.nextQ: targetQ})
+            rAll += r
 
         jList.append(j)
         rList.append(rAll)
+        if (i + 1) % 50 == 0:
+            print("Training {0}   Episodes: {1} E: {2:.3f} J: {3:.3f} R: {4:.3f}".format(agent.name, i+1, e, np.mean(jList), np.mean(rList)))
+            jList = []
+            rList = []
 
 
 def compete_and_return_score_list(sess, agent1, agent2, num_games):
@@ -194,8 +222,8 @@ def rand_index_filter(filter):
     return np.where(filter == 1)[0][f_idx]
 
 
-num_iterations = 3
-num_episodes = 100
+num_iterations = 5
+num_episodes = 200
 trial_length = 100
 y = .5
 e_init = 1
