@@ -12,7 +12,13 @@ class DeepC4Agent():
         self.inputs = tf.compat.v1.placeholder(shape=[None, self.input_length], dtype=tf.float32)
         self.keep_pct = tf.compat.v1.placeholder(shape=None, dtype=tf.float32)
 
-        hidden = slim.fully_connected(self.inputs, 128,
+        hidden = slim.fully_connected(self.inputs, 512,
+                                      activation_fn=tf.nn.tanh,
+                                      biases_initializer=None)
+
+        hidden = slim.dropout(hidden, self.keep_pct)
+
+        hidden = slim.fully_connected(hidden, 512,
                                       activation_fn=tf.nn.tanh,
                                       biases_initializer=None)
 
@@ -23,12 +29,6 @@ class DeepC4Agent():
                                       biases_initializer=None)
 
         hidden = slim.dropout(hidden, self.keep_pct)
-
-#        hidden = slim.fully_connected(hidden, 512,
- #                                     activation_fn=tf.nn.tanh,
-  #                                    biases_initializer=None)
-
-  #      hidden = slim.dropout(hidden, self.keep_pct)
 
         self.Qout = slim.fully_connected(hidden, Connect4Game.COLUMN_COUNT,
                                          activation_fn=None,
