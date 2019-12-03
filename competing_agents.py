@@ -53,25 +53,26 @@ def train_agent(sess, agent, opponent):
             filter = open_actions(g)
             s = get_state(g)
             allQopp = sess.run(opponent.Qout, feed_dict={opponent.inputs: s, opponent.keep_pct: 1})
-            top = 1
+            top = 3
             # introduce some random behaviour, deterministic player is too easy to learn to beat
             randval = np.random.rand(1)
             if randval > e2:
                 top = 1
             elif randval > e3:
-                top = 1
+                top = 2
             a = best_allowed_action(allQopp, filter, top)
             g.play_piece(g.first_empty_row(a), a)
 
         # The game training
-        while j < 100 and g.current_state == g.GAME_RUNNING:
-            filter = open_actions(g)
-            s = get_state(g)
+        while j < 100 and np.sum(open_actions(g)) > 0 and g.current_state == g.GAME_RUNNING:
+
             targetQ = np.zeros((1, Connect4Game.COLUMN_COUNT))
 
             # agent
             if np.sum(open_actions(g)) > 0 and g.current_state == g.GAME_RUNNING:
                 j += 1
+                filter = open_actions(g)
+                s = get_state(g)
                 # Choose an action
                 allQ = sess.run(agent.Qout, feed_dict={agent.inputs: s, agent.keep_pct: 1})
                 if np.random.rand(1) < e:
@@ -99,16 +100,18 @@ def train_agent(sess, agent, opponent):
             # then opponent
             if opponent is not None and np.sum(open_actions(g)) > 0 and g.current_state == g.GAME_RUNNING:
                 j += 1
-                allQopp = sess.run(opponent.Qout, feed_dict={opponent.inputs: s, opponent.keep_pct: 1})
-                top = 1
+                filter = open_actions(g)
+                op_s = get_state(g)
+                allQopp = sess.run(opponent.Qout, feed_dict={opponent.inputs: op_s, opponent.keep_pct: 1})
+                top = 3
                 # introduce some random behaviour, deterministic player is too easy to learn to beat
                 randval = np.random.rand(1)
                 if randval > e2:
                     top = 1
                 elif randval > e3:
-                    top = 1
-                a = best_allowed_action(allQopp, filter, top)
-                g.play_piece(g.first_empty_row(a), a)
+                    top = 2
+                op_a = best_allowed_action(allQopp, filter, top)
+                g.play_piece(g.first_empty_row(op_a), op_a)
                 op_rew = get_reward(g)
 
                 r = r - 0.9*op_rew
@@ -126,7 +129,7 @@ def train_agent(sess, agent, opponent):
 
         jList.append(j)
         rList.append(rAll)
-        if (i + 1) % 50 == 0:
+        if (i + 1) % 100 == 0:
             print("Training {0}   Episodes: {1} E: {2:.3f} J: {3:.3f} R: {4:.3f}".format(agent.name, i+1, e, np.mean(jList), np.mean(rList)))
             jList = []
             rList = []
@@ -222,12 +225,23 @@ def rand_index_filter(filter):
     return np.where(filter == 1)[0][f_idx]
 
 
-num_iterations = 5
-num_episodes = 200
+
+
+
+
+
+
+
+
+
+
+
+num_iterations = 15
+num_episodes = 1001
 trial_length = 100
 y = .5
 e_init = 1
-final_challenger_id = 2
+final_challenger_id = 6
 
 tf.compat.v1.reset_default_graph()
 
@@ -263,7 +277,7 @@ with tf.compat.v1.Session() as sess:
 
     # let selected models compete and save games
     duel_result = duel_and_save_games(sess, challenger_list[final_challenger_id], CHAMPION, "duel_{0}x{1}".format(num_iterations,num_episodes))
-    print(duel_result)
+    print("DUEL: {0} against CHAMPION ({1}). Result: {2}".format(challenger_list[final_challenger_id].name, CHAMPION.name, duel_result))
     #    f = open(filename, "w+")
     #    for board in bList:
     #        f.write("{0}\n".format(board))
