@@ -18,7 +18,13 @@ class DeepC4Agent():
 
         hidden = slim.dropout(hidden, self.keep_pct)
 
-        hidden = slim.fully_connected(hidden, 512,
+        hidden = slim.fully_connected(hidden, 2048,
+                                      activation_fn=tf.nn.tanh,
+                                      biases_initializer=None)
+
+        hidden = slim.dropout(hidden, self.keep_pct)
+
+        hidden = slim.fully_connected(hidden, 2048,
                                       activation_fn=tf.nn.tanh,
                                       biases_initializer=None)
 
