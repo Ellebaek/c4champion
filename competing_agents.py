@@ -345,12 +345,12 @@ def rand_index_filter(filter):
 
 
 
-num_iterations = 15
-num_episodes = 1002
+num_iterations = 10
+num_episodes = 1000
 trial_length = 100
 y = .5
 e_init = 1
-final_challenger_id = 6
+final_challenger_id = 5
 
 tf.compat.v1.reset_default_graph()
 
