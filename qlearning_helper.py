@@ -1,17 +1,22 @@
 import numpy as np
 from Connect4Game import Connect4Game
 
-input_length = Connect4Game.ROW_COUNT * Connect4Game.COLUMN_COUNT
+board_size = Connect4Game.ROW_COUNT * Connect4Game.COLUMN_COUNT
 
 
 def open_actions(c4game):
     oa = [0 if c4game.first_empty_row(_x) < 0 else 1 for _x in range(c4game.COLUMN_COUNT)]
     return np.array(oa)
 
-def get_state(c4game):
+def get_state42(c4game):
     board = np.array(c4game.board_position) + 0.01
-    return board.reshape((1, input_length))
+    return board.reshape((1, board_size))
 
+def get_state(c4game):
+    boardP1 = (np.array(c4game.board_position) == -1).astype(int)
+    boardP2 = (np.array(c4game.board_position) == 1).astype(int)
+    boardEmpty = (np.array(c4game.board_position) == 0).astype(int)
+    return np.concatenate((boardP1.reshape((1, board_size)), boardP2.reshape((1, board_size)), boardEmpty.reshape((1, board_size))), axis = 1)
 
 def get_reward(c4game):
     rew = 0.01
