@@ -140,7 +140,9 @@ def train_agent_against_list(sess, agent, opponents, episode_start_count=0):
     rList = []
     agents_turn_to_start = False
     for i in range(num_episodes):
-        e = e_init * 1. / log(i / 10 + exp(1))
+        # before adding episode_start_count training converges after approximately 60 generations
+        #TODO: invent decreasing expression that approaches 0 and not 0.08 after 5000 episodes
+        e = e_init * 1. / log((i + episode_start_count) / 10 + exp(1))
         e2 = 0.30
         e3 = 0.10
         # Reset environment and get first new observation
@@ -353,7 +355,7 @@ def get_next_challenger_id(current_id):
 
 
 num_agents = 6
-num_generations = 15
+num_generations = 100
 num_episodes = 500
 max_num_episodes = 5000
 trial_length = 100
