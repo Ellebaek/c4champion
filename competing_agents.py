@@ -1,7 +1,6 @@
 from math import log, exp
 from qlearning_helper import open_actions, get_state, get_reward, get_max_future_reward_previous_player
 from qlearning_helper import get_max_future_reward_current_player
-from SimpleC4Agent import SimpleC4Agent
 from DeepC4Agent import DeepC4Agent
 from Connect4Game import Connect4Game
 import numpy as np
@@ -135,7 +134,7 @@ def train_agent(sess, agent, opponent):
             rList = []
 
 
-def train_agent_against_list(sess, agent, opponents):
+def train_agent_against_list(sess, agent, opponents, episode_start_count=0):
     # create lists to contain total rewards and steps per episode
     jList = []
     rList = []
@@ -174,6 +173,7 @@ def train_agent_against_list(sess, agent, opponents):
         while j < 100 and np.sum(open_actions(g)) > 0 and g.current_state == g.GAME_RUNNING:
 
             targetQ = np.zeros((1, Connect4Game.COLUMN_COUNT))
+            original_a = -1
 
             # agent
             if np.sum(open_actions(g)) > 0 and g.current_state == g.GAME_RUNNING:
@@ -185,8 +185,10 @@ def train_agent_against_list(sess, agent, opponents):
                 if np.random.rand(1) < e:
                     # full random
                     a = rand_index_filter(filter)
+                    original_a = a
                 else:  # greedy
                     a = best_allowed_action(allQ, filter, 1)
+                    original_a = np.argmax(allQ, axis=1)
 
                 # initialize target
                 targetQ = allQ
@@ -229,6 +231,8 @@ def train_agent_against_list(sess, agent, opponents):
                 maxQ1 = get_max_future_reward_current_player(g)
 
             # update after opponent have played
+            if original_a != a:
+                targetQ[0, original_a] = np.min(targetQ) # this improved game understanding a lot
             targetQ[0, a] = r + y * maxQ1
 
             # Train our network using target and predicted Q values
@@ -239,7 +243,7 @@ def train_agent_against_list(sess, agent, opponents):
         jList.append(j)
         rList.append(rAll)
         if (i + 1) % 100 == 0:
-            print("Training {0}   Episodes: {1} E: {2:.3f} J: {3:.3f} R: {4:.3f}".format(agent.name, i+1, e, np.mean(jList), np.mean(rList)))
+            print("Training {0}   Episodes: {1} E: {2:.3f} J: {3:.3f} R: {4:.3f}".format(agent.name, i+1 + episode_start_count, e, np.mean(jList), np.mean(rList)))
             jList = []
             rList = []
 
@@ -337,25 +341,30 @@ def rand_index_filter(filter):
 
 
 
+def get_next_challenger_id(current_id):
+    idx = current_id + 1
+    if idx >= num_agents:
+        idx = 0
+    return idx
 
 
 
 
 
 
-
-
-num_iterations = 10
-num_episodes = 1000
+num_agents = 6
+num_generations = 15
+num_episodes = 500
+max_num_episodes = 5000
 trial_length = 100
 y = .5
 e_init = 1
-final_challenger_id = 5
+final_challenger_id = -1
 
 tf.compat.v1.reset_default_graph()
 
 challenger_list = []
-for i in range(num_iterations + 1):
+for i in range(num_agents + 1):
     challenger_list.append(DeepC4Agent("Agent{0}".format(i)))
 
 init = tf.compat.v1.global_variables_initializer()
@@ -369,28 +378,38 @@ with tf.compat.v1.Session() as sess:
     train_agent_against_list(sess, CHAMPION, [])
     e_init = 0.5
     # train with competition
-    for i in range(1, num_iterations + 1, 1):
+    challenger_id = 0
+    for i in range(1, num_generations + 1, 1):
+        # "re-using" or continued learning have great impact on performance
+        challenger_id = get_next_challenger_id(challenger_id)
+        CHALLENGER = challenger_list[challenger_id]
         opponent_list = []
-        CHALLENGER = challenger_list[i]
-        for j in range(i):
-            opponent_list.append(challenger_list[i - j - 1])
-            if len(opponent_list) == 5:
-                break
-
-        train_agent_against_list(sess, CHALLENGER,  opponent_list)
-        win_list = compete_and_return_score_list(sess, CHAMPION, CHALLENGER, trial_length)
-        score = np.sum(win_list)
-        draws = np.size(np.where(np.array(win_list) == 0))
-        print("Iteration {0}: {1} against {2}. Score {3}. Draws: {4}".format(i,
-                                                                             CHAMPION.name,
-                                                                             CHALLENGER.name,
-                                                                             score,
-                                                                             draws))
+        score = -1
+        episode_count = 0
+        for j in range(min(num_agents, i)):
+            if j != challenger_id:
+                opponent_list.append(challenger_list[j])
+        #for j in range(i):
+        #    opponent_list.append(challenger_list[i - j - 1])
+        #    if len(opponent_list) == 5:
+        #        break
+        while score < 10 and episode_count < max_num_episodes:
+            train_agent_against_list(sess, CHALLENGER,  opponent_list, episode_count)
+            episode_count = episode_count + num_episodes
+            win_list = compete_and_return_score_list(sess, CHAMPION, CHALLENGER, trial_length)
+            score = np.sum(win_list)
+            draws = np.size(np.where(np.array(win_list) == 0))
+            print("Generation {0}: {1} against {2}. Score {3}. Draws: {4}".format(i,
+                                                                                 CHAMPION.name,
+                                                                                 CHALLENGER.name,
+                                                                                 score,
+                                                                                 draws))
         if score > 0:
+            final_challenger_id = max(challenger_id - 1, 0)
             CHAMPION = CHALLENGER
 
-    # let selected models compete and save games
-    duel_result = duel_and_save_games(sess, challenger_list[final_challenger_id], CHAMPION, "duel_{0}x{1}".format(num_iterations,num_episodes))
+    # let best models compete and save games
+    duel_result = duel_and_save_games(sess, challenger_list[final_challenger_id], CHAMPION, "duel_{0}x{1}".format(num_generations,num_episodes))
     print("DUEL: {0} against CHAMPION ({1}). Result: {2}".format(challenger_list[final_challenger_id].name, CHAMPION.name, duel_result))
     #    f = open(filename, "w+")
     #    for board in bList:
