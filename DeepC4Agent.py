@@ -2,9 +2,9 @@ import tensorflow as tf
 from Connect4Game import Connect4Game
 import tensorflow.contrib.slim as slim
 
-
+# TODO: implement 5x5 convolution  with stride 1x1 and no padding, minimum 50 filters
 class DeepC4Agent():
-    input_length = Connect4Game.ROW_COUNT * Connect4Game.COLUMN_COUNT
+    input_length = Connect4Game.ROW_COUNT * Connect4Game.COLUMN_COUNT * 3
 
     def __init__(self, name):
         self.name = name
@@ -13,25 +13,25 @@ class DeepC4Agent():
         self.keep_pct = tf.compat.v1.placeholder(shape=None, dtype=tf.float32)
 
         hidden = slim.fully_connected(self.inputs, 512,
-                                      activation_fn=tf.nn.tanh,
+                                      activation_fn=tf.nn.relu,
                                       biases_initializer=None)
 
         hidden = slim.dropout(hidden, self.keep_pct)
 
         hidden = slim.fully_connected(hidden, 2048,
-                                      activation_fn=tf.nn.tanh,
+                                      activation_fn=tf.nn.relu,
                                       biases_initializer=None)
 
         hidden = slim.dropout(hidden, self.keep_pct)
 
-        hidden = slim.fully_connected(hidden, 2048,
-                                      activation_fn=tf.nn.tanh,
+        hidden = slim.fully_connected(hidden, 1024,
+                                      activation_fn=tf.nn.relu,
                                       biases_initializer=None)
 
         hidden = slim.dropout(hidden, self.keep_pct)
 
         hidden = slim.fully_connected(hidden, 128,
-                                      activation_fn=tf.nn.tanh,
+                                      activation_fn=tf.nn.relu,
                                       biases_initializer=None)
 
         hidden = slim.dropout(hidden, self.keep_pct)
