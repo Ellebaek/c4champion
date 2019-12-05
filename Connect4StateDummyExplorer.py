@@ -19,9 +19,9 @@ class GamePrinter():
 
 # main method
 def main():
-    gp = GamePrinter(state_list_file="c4games/duel_15x501_game1.txt")
+    gp = GamePrinter(state_list_file="c4games/duel_100x500_game1.txt")
     gp.print_game()
-    gp = GamePrinter(state_list_file="c4games/duel_15x501_game2.txt")
+    gp = GamePrinter(state_list_file="c4games/duel_100x500_game2.txt")
     gp.print_game()
 
 if __name__ == "__main__":
