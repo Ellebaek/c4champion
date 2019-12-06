@@ -1,35 +1,14 @@
 from math import log, exp
 from qlearning_helper import open_actions, get_state, get_reward, get_max_future_reward_previous_player
-from qlearning_helper import get_max_future_reward_current_player
-from DeepC4Agent import DeepC4Agent
+from qlearning_helper import get_max_future_reward_current_player, save_game, best_allowed_action, rand_index_filter
+from DeepC4AgentTF import DeepC4AgentTF
 from Connect4Game import Connect4Game
 import numpy as np
 import tensorflow as tf
 import copy
 
-def save_game(board_list, filename):
-    f = open(filename, "w+")
-    for board in board_list:
-        f.write("{0}\n".format(board))
-    f.close()
 
-def best_allowed_action(q_values, open_actions, top):
-    sorted_args = np.argsort(-q_values, 1)
-    # multiple best
-    a_bestv = q_values[0, sorted_args[0, 0]]
-    filter2 = np.logical_and(q_values.flatten() == a_bestv, open_actions)
-    if np.sum(filter2) > 0 and top == 1:
-        a_best = rand_index_filter(filter2)
-    else:
-        count_down = max(top, np.sum(open_actions))
-        # if none best are in filter, select the best remaining in filter
-        for idx in range(Connect4Game.COLUMN_COUNT):
-            if open_actions[sorted_args[0, idx]] == 1:
-                a_best = sorted_args[0, idx]
-                count_down = count_down - 1
-                if count_down == 0:
-                    break
-    return a_best
+ckpt_dir = 'checkpoints/'
 
 
 def train_agent(sess, agent, opponent):
@@ -244,7 +223,10 @@ def train_agent_against_list(sess, agent, opponents, episode_start_count=0):
 
         jList.append(j)
         rList.append(rAll)
-        if (i + 1) % 100 == 0:
+        if (i + 1) % 5 == 0:
+            sess.run(agent.training_episodes.assign_add(5))
+            #ep = sess.run(agent.training_episodes, feed_dict={})
+            #_ = sess.run(agent.training_episodes, feed_dict={agent.training_episodes: ep + 5})
             print("Training {0}   Episodes: {1} E: {2:.3f} J: {3:.3f} R: {4:.3f}".format(agent.name, i+1 + episode_start_count, e, np.mean(jList), np.mean(rList)))
             jList = []
             rList = []
@@ -335,9 +317,6 @@ def duel_and_save_games(sess, agent1, agent2, duelname):
 
 
 
-def rand_index_filter(filter):
-    f_idx = np.random.randint(np.sum(filter))
-    return np.where(filter == 1)[0][f_idx]
 
 
 
@@ -355,10 +334,10 @@ def get_next_challenger_id(current_id):
 
 
 num_agents = 6
-num_generations = 100
-num_episodes = 500
-max_num_episodes = 5000
-trial_length = 100
+num_generations = 10
+num_episodes = 5
+max_num_episodes = 10
+trial_length = 10
 y = .5
 e_init = 1
 final_challenger_id = -1
@@ -367,12 +346,15 @@ tf.compat.v1.reset_default_graph()
 
 challenger_list = []
 for i in range(num_agents + 1):
-    challenger_list.append(DeepC4Agent("Agent{0}".format(i)))
+    challenger_list.append(DeepC4AgentTF("Agent{0}".format(i)))
 
 init = tf.compat.v1.global_variables_initializer()
+saver = tf.train.Saver()
 
 with tf.compat.v1.Session() as sess:
+    # TODO: conditional start from checkpoint or init
     sess.run(init)
+    #saver.restore(sess, "{0}test.ckpt".format(ckpt_dir))
 
     CHAMPION = challenger_list[0]
 
@@ -411,7 +393,7 @@ with tf.compat.v1.Session() as sess:
             CHAMPION = CHALLENGER
 
     # let best models compete and save games
-    duel_result = duel_and_save_games(sess, challenger_list[final_challenger_id], CHAMPION, "duel_{0}x{1}".format(num_generations,num_episodes))
+    duel_result = duel_and_save_games(sess, challenger_list[final_challenger_id], CHAMPION, "duel_{0}x{1}".format(num_generations, num_episodes))
     print("DUEL: {0} against CHAMPION ({1}). Result: {2}".format(challenger_list[final_challenger_id].name, CHAMPION.name, duel_result))
     #    f = open(filename, "w+")
     #    for board in bList:
@@ -419,6 +401,10 @@ with tf.compat.v1.Session() as sess:
     #    f.close()
     #    return g, bList, allQList
 
+    #TODO: conditional save checkpoint
+    # save session
+    #save_path = saver.save(sess, "{0}test.ckpt".format(ckpt_dir))
+    #print("Session saved: {0}".format(save_path))
 
 #TODO: migrate to keras
 #TODO: Save champion model and maybe random challenger model to disk

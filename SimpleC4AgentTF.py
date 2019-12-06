@@ -4,7 +4,7 @@ from Connect4Game import Connect4Game
 
 
 
-class SimpleC4Agent():
+class SimpleC4AgentTF():
     input_length = Connect4Game.ROW_COUNT * Connect4Game.COLUMN_COUNT
 
     def __init__(self, name):

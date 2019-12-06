@@ -8,15 +8,18 @@ def open_actions(c4game):
     oa = [0 if c4game.first_empty_row(_x) < 0 else 1 for _x in range(c4game.COLUMN_COUNT)]
     return np.array(oa)
 
+
 def get_state42(c4game):
     board = np.array(c4game.board_position) + 0.01
     return board.reshape((1, board_size))
+
 
 def get_state(c4game):
     boardP1 = (np.array(c4game.board_position) == -1).astype(int)
     boardP2 = (np.array(c4game.board_position) == 1).astype(int)
     boardEmpty = (np.array(c4game.board_position) == 0).astype(int)
     return np.concatenate((boardP1.reshape((1, board_size)), boardP2.reshape((1, board_size)), boardEmpty.reshape((1, board_size))), axis = 1)
+
 
 def get_reward(c4game):
     rew = 0.01
@@ -53,3 +56,34 @@ def get_max_future_reward_current_player(c4game):
         else:
             rew = 0.5
     return rew
+
+
+def save_game(board_list, filename):
+    f = open(filename, "w+")
+    for board in board_list:
+        f.write("{0}\n".format(board))
+    f.close()
+
+
+def rand_index_filter(filter):
+    f_idx = np.random.randint(np.sum(filter))
+    return np.where(filter == 1)[0][f_idx]
+
+
+def best_allowed_action(q_values, open_actions, top):
+    sorted_args = np.argsort(-q_values, 1)
+    # multiple best
+    a_bestv = q_values[0, sorted_args[0, 0]]
+    filter2 = np.logical_and(q_values.flatten() == a_bestv, open_actions)
+    if np.sum(filter2) > 0 and top == 1:
+        a_best = rand_index_filter(filter2)
+    else:
+        count_down = max(top, np.sum(open_actions))
+        # if none best are in filter, select the best remaining in filter
+        for idx in range(Connect4Game.COLUMN_COUNT):
+            if open_actions[sorted_args[0, idx]] == 1:
+                a_best = sorted_args[0, idx]
+                count_down = count_down - 1
+                if count_down == 0:
+                    break
+    return a_best
