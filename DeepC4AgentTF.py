@@ -15,31 +15,36 @@ class DeepC4AgentTF():
 
         hidden1 = slim.fully_connected(self.inputs, 512,
                                        activation_fn=tf.nn.relu,
-                                       biases_initializer=None)
+                                       biases_initializer=None,
+                                       scope="{0}/fc1".format(name))
 
         dropout1 = slim.dropout(hidden1, self.keep_pct)
 
         hidden2 = slim.fully_connected(dropout1, 2048,
                                        activation_fn=tf.nn.relu,
-                                       biases_initializer=None)
+                                       biases_initializer=None,
+                                       scope="{0}/fc2".format(name))
 
         dropout2 = slim.dropout(hidden2, self.keep_pct)
 
         hidden3 = slim.fully_connected(dropout2, 1024,
                                        activation_fn=tf.nn.relu,
-                                       biases_initializer=None)
+                                       biases_initializer=None,
+                                       scope="{0}/fc3".format(name))
 
         dropout3 = slim.dropout(hidden3, self.keep_pct)
 
         hidden4 = slim.fully_connected(dropout3, 128,
                                        activation_fn=tf.nn.relu,
-                                       biases_initializer=None)
+                                       biases_initializer=None,
+                                       scope="{0}/fc4".format(name))
 
         dropout4 = slim.dropout(hidden4, self.keep_pct)
 
         self.Qout = slim.fully_connected(dropout4, Connect4Game.COLUMN_COUNT,
                                          activation_fn=None,
-                                         biases_initializer=None)
+                                         biases_initializer=None,
+                                         scope="{0}/fc5".format(name))
 
 
         # Below we obtain the loss by taking the sum of squares difference between the target and prediction Q values.
