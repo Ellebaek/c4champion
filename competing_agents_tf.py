@@ -403,8 +403,9 @@ with tf.compat.v1.Session() as sess:
 
     #TODO: conditional save checkpoint
     # save session
-    #save_path = saver.save(sess, "{0}test.ckpt".format(ckpt_dir))
-    #print("Session saved: {0}".format(save_path))
+    # save_path = saver.save(sess, "{0}test2.ckpt".format(ckpt_dir))
+    # print("Session saved: {0}".format(save_path))
+    print("Champion model: {0}".format(CHAMPION.name))
 
 #TODO: migrate to keras
 #TODO: Save champion model and maybe random challenger model to disk
