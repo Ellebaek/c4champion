@@ -16,6 +16,7 @@ class Connect4Game():
 
         self.announce_winner = announce_winner
         self.current_state = self.GAME_RUNNING
+        self.winner = None
 
     def new_board(self):
         # Create the 'empty' board of 0's
@@ -126,8 +127,10 @@ class Connect4Game():
 
         if self.announce_winner:
             evaluation = self.evaluate_board()
-            if abs(evaluation[0]) == 4 or abs(evaluation[2]) == 4 \
-                    or self.pieces_played == self.ROW_COUNT * self.COLUMN_COUNT:
+            if abs(evaluation[0]) == 4 or abs(evaluation[2]) == 4:
+                self.winner = self.current_player
+                self.current_state = self.GAME_OVER
+            elif self.pieces_played == self.ROW_COUNT * self.COLUMN_COUNT:
                 self.current_state = self.GAME_OVER
 
         # switch player
