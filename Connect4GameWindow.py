@@ -23,9 +23,9 @@ colors = [
 
 
 class Connect4GameWindow(arcade.Window):
-    def __init__(self, width, announce_winner=False):
+    def __init__(self, width, announce_winner=False, title='Connect4 Game Window'):
         height = int(width / Connect4Game.COLUMN_COUNT * Connect4Game.ROW_COUNT)
-        super().__init__(width, height, 'Connect4 Game Window')
+        super().__init__(width, height, title)
         self.set_location(200, 100)
         self.left_margin = self.width * MARGIN_PERCENTAGE / 2
         self.top_margin = self.height * MARGIN_PERCENTAGE / 2
