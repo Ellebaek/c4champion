@@ -120,8 +120,7 @@ def train_agent_against_list(sess, agent, opponents, episode_start_count=0):
     agents_turn_to_start = False
     for i in range(num_episodes):
         # before adding episode_start_count training converges after approximately 60 generations
-        #TODO: invent decreasing expression that approaches 0 and not 0.08 after 5000 episodes
-        e = e_init * 1. / log((i + episode_start_count) / 10 + exp(1))
+        e = e_init - (e_init - e_end) / e_steps * (i + 1 + episode_start_count)
         e2 = 0.30
         e3 = 0.10
         # Reset environment and get first new observation
@@ -223,8 +222,8 @@ def train_agent_against_list(sess, agent, opponents, episode_start_count=0):
 
         jList.append(j)
         rList.append(rAll)
-        if (i + 1) % 5 == 0:
-            sess.run(agent.training_episodes.assign_add(5))
+        if (i + 1) % 50 == 0:
+            sess.run(agent.training_episodes.assign_add(50))
             #ep = sess.run(agent.training_episodes, feed_dict={})
             #_ = sess.run(agent.training_episodes, feed_dict={agent.training_episodes: ep + 5})
             print("Training {0}   Episodes: {1} E: {2:.3f} J: {3:.3f} R: {4:.3f}".format(agent.name, i+1 + episode_start_count, e, np.mean(jList), np.mean(rList)))
@@ -266,7 +265,7 @@ def compete_and_return_score_list(sess, agent1, agent2, num_games):
             g.play_piece(g.first_empty_row(a), a)
             d = g.current_state == Connect4Game.GAME_OVER
 
-        if g.current_state == Connect4Game.GAME_OVER:
+        if g.current_state == Connect4Game.GAME_OVER and g.winner is not None:
             if agent1s_turn:
                 wList.append(-1)
             else:
@@ -302,7 +301,7 @@ def duel_and_save_games(sess, agent1, agent2, duelname):
             d = g.current_state == Connect4Game.GAME_OVER
             bList.append(copy.deepcopy(g.board_position))
 
-        if g.current_state == Connect4Game.GAME_OVER:
+        if g.current_state == Connect4Game.GAME_OVER and g.winner is not None:
             if agent1s_turn:
                 wList.append(-1)
             else:
@@ -334,12 +333,14 @@ def get_next_challenger_id(current_id):
 
 
 num_agents = 6
-num_generations = 10
-num_episodes = 5
-max_num_episodes = 10
-trial_length = 10
+num_generations = 5
+num_episodes = 100
+max_num_episodes = 300
+trial_length = 100
 y = .5
 e_init = 1
+e_end = 0.005
+e_steps = max_num_episodes
 final_challenger_id = -1
 
 tf.compat.v1.reset_default_graph()
@@ -403,8 +404,8 @@ with tf.compat.v1.Session() as sess:
 
     #TODO: conditional save checkpoint
     # save session
-    # save_path = saver.save(sess, "{0}test2.ckpt".format(ckpt_dir))
-    # print("Session saved: {0}".format(save_path))
+    save_path = saver.save(sess, "{0}test3.ckpt".format(ckpt_dir))
+    print("Session saved: {0}".format(save_path))
     print("Champion model: {0}".format(CHAMPION.name))
 
 #TODO: migrate to keras
