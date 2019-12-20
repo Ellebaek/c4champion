@@ -12,6 +12,7 @@ class Connect4Game():
         self.current_player = 1
         self.previous_player = 2
         self.board_position = self.new_board()
+        self.pieces_played = 0
 
         self.announce_winner = announce_winner
         self.current_state = self.GAME_RUNNING
@@ -121,10 +122,12 @@ class Connect4Game():
     def play_piece(self, row, column):
         # assign -1 for player 1 and +1 for player 2
         self.board_position[row][column] = (self.current_player - 1.5) * 2
+        self.pieces_played = self.pieces_played + 1
 
         if self.announce_winner:
             evaluation = self.evaluate_board()
-            if abs(evaluation[0]) == 4 or abs(evaluation[2]) == 4:
+            if abs(evaluation[0]) == 4 or abs(evaluation[2]) == 4 \
+                    or self.pieces_played == self.ROW_COUNT * self.COLUMN_COUNT:
                 self.current_state = self.GAME_OVER
 
         # switch player
