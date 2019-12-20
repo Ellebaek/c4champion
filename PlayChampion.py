@@ -12,8 +12,8 @@ ckpt_dir = 'checkpoints/'
 
 
 class PlayChampion(Connect4GameWindow):
-    def __init__(self, tf_session, champion_agent, champion_player_id):
-        super().__init__(WINDOW_WIDTH, announce_winner=True)
+    def __init__(self, tf_session, champion_agent, champion_player_id, window_title):
+        super().__init__(WINDOW_WIDTH, announce_winner=True, title=window_title)
         self.board_sequence = []
         self.champion_player_id = champion_player_id
         self.champion_agent = champion_agent
@@ -31,15 +31,19 @@ class PlayChampion(Connect4GameWindow):
 
 # main method
 def main():
-    CHAMPION = DeepC4AgentTF("Agent4")
+    CHAMPION = DeepC4AgentTF("Agent5")
     saver = tf.train.Saver()
     # vars_global = tf.global_variables()
 
     with tf.compat.v1.Session() as sess:
         # sess.run(init)
-        saver.restore(sess, "{0}test2.ckpt".format(ckpt_dir))
-
-        PlayChampion(tf_session=sess, champion_agent=CHAMPION, champion_player_id=1)
+        saver.restore(sess, "{0}test3.ckpt".format(ckpt_dir))
+        ep = sess.run(CHAMPION.training_episodes, feed_dict={})
+#        print("Playing CHAMPION: {0} trained for {1} episodes".format(CHAMPION.name, ep))
+        PlayChampion(tf_session=sess,
+                     champion_agent=CHAMPION,
+                     champion_player_id=2,
+                     window_title="Playing against champion agent trained for {0:.0f} episodes".format(ep))
         arcade.run()
 
 
