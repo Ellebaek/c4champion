@@ -121,8 +121,8 @@ def train_agent_against_list(sess, agent, opponents, episode_start_count=0):
     for i in range(num_episodes):
         # before adding episode_start_count training converges after approximately 60 generations
         e = e_init - (e_init - e_end) / e_steps * (i + 1 + episode_start_count)
-        e2 = 0.30
-        e3 = 0.10
+        e2 = 0.20
+        e3 = 0.05
         # Reset environment and get first new observation
         g = Connect4Game(announce_winner=True)
         rAll = 0
@@ -232,8 +232,8 @@ def train_agent_against_list(sess, agent, opponents, episode_start_count=0):
 
 
 def compete_and_return_score_list(sess, agent1, agent2, num_games):
-    e2 = 0.30
-    e3 = 0.10
+    e2 = 0.20
+    e3 = 0.05
     agent1_to_start = False
     wList = []
     for i in range(num_games):
@@ -333,9 +333,9 @@ def get_next_challenger_id(current_id):
 
 
 num_agents = 6
-num_generations = 5
+num_generations = 45
 num_episodes = 100
-max_num_episodes = 300
+max_num_episodes = 4000
 trial_length = 100
 y = .5
 e_init = 1
@@ -354,13 +354,14 @@ saver = tf.train.Saver()
 
 with tf.compat.v1.Session() as sess:
     # TODO: conditional start from checkpoint or init
-    sess.run(init)
-    #saver.restore(sess, "{0}test.ckpt".format(ckpt_dir))
+    #sess.run(init)
+    saver.restore(sess, "{0}test4_4.ckpt".format(ckpt_dir))
 
     CHAMPION = challenger_list[0]
 
     # train first opponent: Agent0
-    train_agent_against_list(sess, CHAMPION, [])
+    # TODO: uncomment when re-training
+    # train_agent_against_list(sess, CHAMPION, [])
     e_init = 0.5
     # train with competition
     challenger_id = 0
@@ -404,7 +405,7 @@ with tf.compat.v1.Session() as sess:
 
     #TODO: conditional save checkpoint
     # save session
-    save_path = saver.save(sess, "{0}test3.ckpt".format(ckpt_dir))
+    save_path = saver.save(sess, "{0}test4_5.ckpt".format(ckpt_dir))
     print("Session saved: {0}".format(save_path))
     print("Champion model: {0}".format(CHAMPION.name))
 
