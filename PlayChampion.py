@@ -31,18 +31,18 @@ class PlayChampion(Connect4GameWindow):
 
 # main method
 def main():
-    CHAMPION = DeepC4AgentTF("Agent5")
+    CHAMPION = DeepC4AgentTF("Agent3")
     saver = tf.train.Saver()
     # vars_global = tf.global_variables()
 
     with tf.compat.v1.Session() as sess:
         # sess.run(init)
-        saver.restore(sess, "{0}test3.ckpt".format(ckpt_dir))
+        saver.restore(sess, "{0}test4_5.ckpt".format(ckpt_dir))
         ep = sess.run(CHAMPION.training_episodes, feed_dict={})
 #        print("Playing CHAMPION: {0} trained for {1} episodes".format(CHAMPION.name, ep))
         PlayChampion(tf_session=sess,
                      champion_agent=CHAMPION,
-                     champion_player_id=2,
+                     champion_player_id=1,
                      window_title="Playing against champion agent trained for {0:.0f} episodes".format(ep))
         arcade.run()
 
