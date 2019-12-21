@@ -50,7 +50,7 @@ class Connect4StateExplorerWindow(Connect4GameWindow):
 
 # main method
 def main():
-    Connect4StateExplorerWindow(state_list_file="c4games/duel_15x1001_game1.txt")
+    Connect4StateExplorerWindow(state_list_file="c4games/duel_55x100_game1.txt")
     arcade.run()
 
 
