@@ -48,7 +48,7 @@ class DeepC4AgentTF():
 
 
         # Below we obtain the loss by taking the sum of squares difference between the target and prediction Q values.
-        self.nextQ = tf.compat.v1.placeholder(shape=[1, Connect4Game.COLUMN_COUNT], dtype=tf.float32)
+        self.nextQ = tf.compat.v1.placeholder(shape=[None, Connect4Game.COLUMN_COUNT], dtype=tf.float32)
         loss = tf.reduce_sum(tf.square(self.nextQ - self.Qout))
         trainer = tf.compat.v1.train.GradientDescentOptimizer(learning_rate=0.001)
         self.updateModel = trainer.minimize(loss)
