@@ -20,6 +20,15 @@ def get_state(c4game):
     boardEmpty = (np.array(c4game.board_position) == 0).astype(int)
     return np.concatenate((boardP1.reshape((1, board_size)), boardP2.reshape((1, board_size)), boardEmpty.reshape((1, board_size))), axis = 1)
 
+gamma = 0.95
+def discount_rewards(r):
+    """ take 1D float array of rewards and compute discounted reward """
+    discounted_r = np.zeros_like(r)
+    running_add = 0
+    for t in reversed(range(0, len(r))):
+        running_add = running_add * gamma + r[t]
+        discounted_r[t] = running_add
+    return discounted_r
 
 def get_reward(c4game):
     rew = 0.01
