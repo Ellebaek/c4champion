@@ -1,6 +1,6 @@
 from math import log, exp
 from qlearning_helper import open_actions, get_state, get_reward, board_size
-from qlearning_helper import discount_rewards, save_game, best_allowed_action, rand_index_filter
+from qlearning_helper import dup_mirror_input, discount_rewards, save_game, best_allowed_action, rand_index_filter
 from DeepC4AgentTF import DeepC4AgentTF
 from Connect4Game import Connect4Game
 import numpy as np
@@ -129,6 +129,8 @@ def train_agent_against_list(sess, agent, opponents, episode_start_count=0):
         dr = discount_rewards(reward_list)
         for a_id in range(len(action_list)):
             targetQ[a_id, action_list[a_id]] = dr[a_id]
+
+        states, targetQ = dup_mirror_input(states, targetQ)
         # Train our network using target and predicted Q values after each game with discounted reward
         _ = sess.run(agent.updateModel, feed_dict={agent.inputs: states, agent.keep_pct: 1, agent.nextQ: targetQ})
 
@@ -245,9 +247,9 @@ def get_next_challenger_id(current_id):
 
 
 num_agents = 6
-num_generations = 20
+num_generations = 21 #100
 num_episodes = 100
-max_num_episodes = 1000
+max_num_episodes = 500 #4000
 trial_length = 100
 #y = .5
 e_init = 1
@@ -267,14 +269,14 @@ saver = tf.train.Saver()
 with tf.compat.v1.Session() as sess:
     # TODO: conditional start from checkpoint or init
     sess.run(init)
-    #saver.restore(sess, "{0}dr_test1_0.ckpt".format(ckpt_dir))
+    #saver.restore(sess, "{0}dr_test1_4.ckpt".format(ckpt_dir))
 
     CHAMPION = challenger_list[0]
 
     # train first opponent: Agent0
     # TODO: uncomment when re-training
     train_agent_against_list(sess, CHAMPION, [])
-    e_init = 0.5
+    e_init = 0.3
     # train with competition
     challenger_id = 0
     for i in range(1, num_generations + 1, 1):
@@ -310,6 +312,6 @@ with tf.compat.v1.Session() as sess:
 
     #TODO: conditional save checkpoint
     # save session
-    save_path = saver.save(sess, "{0}dr_test1_0.ckpt".format(ckpt_dir))
-    print("Session saved: {0}".format(save_path))
+    save_path = saver.save(sess, "{0}mir_test1_0.ckpt".format(ckpt_dir))
+    #print("Session saved: {0}".format(save_path))
     print("Champion model: {0}".format(CHAMPION.name))
