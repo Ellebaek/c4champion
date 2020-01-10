@@ -1,5 +1,6 @@
 import numpy as np
 from Connect4Game import Connect4Game
+import copy
 
 board_size = Connect4Game.ROW_COUNT * Connect4Game.COLUMN_COUNT
 
@@ -96,3 +97,15 @@ def best_allowed_action(q_values, open_actions, top):
                 if count_down == 0:
                     break
     return a_best
+
+def dup_mirror_input(states, targets):
+    states_mirror = np.zeros((states.shape))
+    for r in range(states.shape[0]):
+        bP1Mirror = np.flip(states[r, 0:board_size].reshape((Connect4Game.ROW_COUNT, Connect4Game.COLUMN_COUNT)),1)
+        bP2Mirror = np.flip(states[r, board_size:2*board_size].reshape((Connect4Game.ROW_COUNT, Connect4Game.COLUMN_COUNT)),1)
+        bEmptyMirror = np.flip(states[r, 2*board_size:3*board_size].reshape((Connect4Game.ROW_COUNT, Connect4Game.COLUMN_COUNT)),1)
+        states_mirror[r, :] = np.concatenate((bP1Mirror.reshape((1, board_size)),
+                                              bP2Mirror.reshape((1, board_size)),
+                                              bEmptyMirror.reshape((1, board_size))), axis=1)
+    targets_mirror = np.flip(targets, axis=1)
+    return np.concatenate((states, states_mirror), axis=0), np.concatenate((targets, targets_mirror), axis=0)
