@@ -51,16 +51,16 @@ class Connect4Game():
 
     def evaluate_board(self):
         strip_eval = None
-        center_height = self.ROW_COUNT - 1 # - self.first_empty_row(3)
+        center_height = self.ROW_COUNT # - self.first_empty_row(3)
         sum1 = 0
         sum2 = 0
         pot1 = False
         pot2 = False
         # check vertical
         for column in range(self.COLUMN_COUNT):
-            height = self.ROW_COUNT - 1  # - self.first_empty_row(column)
+            height = self.ROW_COUNT  # - self.first_empty_row(column)
             i = 0
-            while i <= height - 3:
+            while i <= height - 4:
                 row_id = self.ROW_COUNT - 1 - i
                 strip_eval = self.evaluate_strip(self.board_position[row_id][column],
                                                  self.board_position[row_id-1][column],
