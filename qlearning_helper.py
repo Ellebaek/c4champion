@@ -4,7 +4,6 @@ import copy
 
 board_size = Connect4Game.ROW_COUNT * Connect4Game.COLUMN_COUNT
 
-
 def open_actions(c4game):
     oa = [0 if c4game.first_empty_row(_x) < 0 else 1 for _x in range(c4game.COLUMN_COUNT)]
     return np.array(oa)
@@ -21,8 +20,7 @@ def get_state(c4game):
     boardEmpty = (np.array(c4game.board_position) == 0).astype(int)
     return np.concatenate((boardP1.reshape((1, board_size)), boardP2.reshape((1, board_size)), boardEmpty.reshape((1, board_size))), axis = 1)
 
-gamma = 0.95
-def discount_rewards(r):
+def discount_rewards(r, gamma):
     """ take 1D float array of rewards and compute discounted reward """
     discounted_r = np.zeros_like(r)
     running_add = 0

@@ -1,5 +1,6 @@
 import tensorflow as tf
 from Connect4Game import Connect4Game
+from ExperienceBuffer import ExperienceBuffer
 import tensorflow.contrib.slim as slim
 
 # TODO: implement 5x5 convolution  with stride 1x1 and no padding, minimum 50 filters
@@ -8,6 +9,7 @@ class DeepC4AgentTF():
 
     def __init__(self, name):
         self.name = name
+        self.experience = ExperienceBuffer(buffer_size=2048)
         # These lines establish the feed-forward part of the network used to choose actions
         self.inputs = tf.compat.v1.placeholder(shape=[None, self.input_length], dtype=tf.float32)
         self.keep_pct = tf.compat.v1.placeholder(shape=None, dtype=tf.float32)

@@ -2,6 +2,7 @@ from math import log, exp
 from qlearning_helper import open_actions, get_state, get_reward, board_size
 from qlearning_helper import dup_mirror_input, discount_rewards, save_game, best_allowed_action, rand_index_filter
 from DeepC4AgentTF import DeepC4AgentTF
+from ExperienceBuffer import ExperienceBuffer
 from Connect4Game import Connect4Game
 import numpy as np
 import tensorflow as tf
@@ -269,13 +270,14 @@ saver = tf.train.Saver()
 with tf.compat.v1.Session() as sess:
     # TODO: conditional start from checkpoint or init
     sess.run(init)
-    saver.restore(sess, "{0}dr_test2_3.ckpt".format(ckpt_dir))
+    saver.restore(sess, "{0}dr_test2_4.ckpt".format(ckpt_dir))
 
     CHAMPION = challenger_list[0]
 
     # train first opponent: Agent0
     # TODO: uncomment when re-training
     #train_agent_against_list(sess, CHAMPION, [])
+
     e_init = 0.3
     # train with competition
     challenger_id = 0
