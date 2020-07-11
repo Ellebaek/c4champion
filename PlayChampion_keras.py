@@ -1,6 +1,6 @@
 import tensorflow as tf
 from Connect4GameWindow import Connect4GameWindow
-from DeepC4Agent_keras import DeepC4Agent
+from DeepC4Agent_keras2 import DeepC4Agent
 from qlearning_helper import open_actions, get_state, best_allowed_action
 from Connect4Game import Connect4Game
 import arcade
@@ -16,18 +16,20 @@ class PlayChampion(Connect4GameWindow):
         self.champion_agent = champion_agent
 
     def on_update(self, delta_time: float):
-        if self.current_game.current_player == self.champion_player_id and self.current_game.current_state == Connect4Game.GAME_RUNNING:
+        if self.current_game.current_player == self.champion_player_id \
+                and self.current_game.current_state == Connect4Game.GAME_RUNNING:
             # CHAMPION TO PLAY
             s = get_state(self.current_game)
-            filter = open_actions(self.current_game)
-            allQ = self.champion_agent.target_network.model.predict(s)
-            a = best_allowed_action(allQ, filter, 1)
+            action_filter = open_actions(self.current_game)
+            all_q = self.champion_agent.qnetwork.model.predict(s)
+            a = best_allowed_action(all_q, action_filter, 1)
             self.play_piece(self.current_game.first_empty_row(a), a)
 
 
 # main method
 def main():
-    CHAMPION = DeepC4Agent(name="AgentK5", load_models=True)
+    # noinspection PyPep8Naming
+    CHAMPION = DeepC4Agent(name="AgentKS1", load_models=True)
 
     PlayChampion(champion_agent=CHAMPION,
                  champion_player_id=2,

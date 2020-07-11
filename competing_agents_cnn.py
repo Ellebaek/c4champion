@@ -4,7 +4,7 @@
 from __future__ import division
 from qlearning_helper import open_actions, get_state, get_reward
 from qlearning_helper import dup_mirror_input, discount_rewards, best_allowed_action, rand_index_filter
-from DeepC4Agent_keras2 import DeepC4Agent
+from DeepC4AgentCNN import DeepC4Agent
 from Connect4Game import Connect4Game
 from ExperienceBuffer import ExperienceBuffer
 import numpy as np
@@ -39,7 +39,7 @@ def train_agent_against_list(agent, opponents, num_games, episode_start_count=0)
             opponent = opponents[opp_idx]
             # let opponent play first move
             s = get_state(g)
-            all_q_opp = opponent.qnetwork.model.predict(s)
+            all_q_opp = opponent.qnetwork.predict(s)
             top = 3
             # introduce some random behaviour, deterministic player is too easy to learn to beat
             rand_val = np.random.rand(1)
@@ -61,7 +61,7 @@ def train_agent_against_list(agent, opponents, num_games, episode_start_count=0)
                 s = get_state(g)
                 state_list.append(s)
                 # Choose an action
-                all_q = agent.qnetwork.model.predict(s)
+                all_q = agent.qnetwork.predict(s)
                 if np.random.rand(1) < e:
                     # full random
                     a = rand_index_filter(open_actions(g))
@@ -89,7 +89,7 @@ def train_agent_against_list(agent, opponents, num_games, episode_start_count=0)
                 episode_len += 1
 
                 opp_s = get_state(g)
-                all_q_opp = opponent.qnetwork.model.predict(opp_s)
+                all_q_opp = opponent.qnetwork.predict(opp_s)
                 top = 3
                 # introduce some random behaviour, deterministic player is too easy to learn to beat
                 rand_val = np.random.rand(1)
@@ -113,7 +113,7 @@ def train_agent_against_list(agent, opponents, num_games, episode_start_count=0)
             target_q_list[a_id][0][action_list[a_id]] = dr[a_id]
 
         if gen_count <= experience_run_in:
-            train_states_ready, train_target_q_ready = dup_mirror_input(np.concatenate(state_list),
+            train_states_ready, train_target_q_ready = dup_mirror_input(np.stack(state_list, axis=0),
                                                                         np.concatenate(target_q_list))
             if gen_count > experience_run_in - pre_buffer:
                 # build initial experience buffer
@@ -124,21 +124,21 @@ def train_agent_against_list(agent, opponents, num_games, episode_start_count=0)
             train_batch = shared_experience.sample(batch_size)
 
             # Separate the batch into its components
-            train_states = np.concatenate(train_batch[:, 0].tolist())
+            train_states = np.stack(train_batch[:, 0].tolist(), axis=0)
             train_actions = train_batch[:, 1]
             train_rewards = train_batch[:, 2]
 
             # obtain new refreshed targetQ's
-            train_target_q = agent.qnetwork.model.predict(train_states)
+            train_target_q = agent.qnetwork.predict(train_states)
             for a_id in range(len(train_actions)):
                 train_target_q[a_id, train_actions[a_id]] = train_rewards[a_id]
 
             train_states_ready, train_target_q_ready = dup_mirror_input(
-                np.vstack([train_states, np.concatenate(state_list)]),
+                np.vstack([train_states, np.stack(state_list, axis=0)]),
                 np.vstack([train_target_q, np.concatenate(target_q_list)]))
 
         # train network using target and predicted Q values after each game with discounted reward
-        loss, mae = agent.qnetwork.model.train_on_batch(train_states_ready, train_target_q_ready)
+        loss, mae = agent.qnetwork.train_on_batch(train_states_ready, train_target_q_ready)
 
         loss_list.append(loss)
         mae_list.append(mae)
@@ -181,10 +181,10 @@ def compete_and_return_score_list(agent1, agent2, num_games):
                 top = 2
                 # a = rand_index_filter(filter)
             if agent1s_turn:
-                all_q = agent1.qnetwork.model.predict(s)
+                all_q = agent1.qnetwork.predict(s)
                 a = best_allowed_action(all_q, action_filter, top)
             else:
-                all_q = agent2.qnetwork.model.predict(s)
+                all_q = agent2.qnetwork.predict(s)
                 a = best_allowed_action(all_q, action_filter, top)
 
             g.play_piece(g.first_empty_row(a), a)
@@ -203,20 +203,20 @@ def compete_and_return_score_list(agent1, agent2, num_games):
 
 batch_size = 8  # How many experiences to add on top of played episode in training step
 y = 0.9  # 0.85  # Discount factor gamma = 0.95
-load_models = True  # Whether to load saved models or not
+load_models = False  # Whether to load saved models or not
 experience_run_in = 5  # Number of generations to train before starting to sampling from experience
 pre_buffer = 4  # Number of generations to have ready in experience before sampling (pre_buffer << experience_run_in)
 print_interval = 50  # How often to print status
 compete_interval = 250  # number of training episodes between competing with champion model
 trial_length = 50  # how many games to settle if champion can be beaten
 score_margin = 5  # margin number of wins to convincing win against champion
-max_num_episodes = 2000  # max number of episodes in generation
+max_num_episodes = 100  # max number of episodes in generation
 e_init = 0.3  # Starting chance of random action
 e_end = 0.005  # Ending chance of random action
 annealing_steps = max_num_episodes  # Steps of training to reduce from start_e -> end_e
 max_num_step = 50  # Maximum allowed episode length
 num_agents = 6  # number of agents live and training with each other
-num_generations = 10000  # how long to run the program
+num_generations = 10 # how long to run the program
 
 
 def get_next_challenger_id(current_id):
@@ -229,7 +229,7 @@ def get_next_challenger_id(current_id):
 # Setup our Q-networks
 challenger_list = []
 for i in range(num_agents + 1):
-    challenger_list.append(DeepC4Agent(name="AgentKS{0}".format(i), load_models=load_models))
+    challenger_list.append(DeepC4Agent(name="AgentCNN{0}".format(i), load_models=load_models))
 
 shared_experience = ExperienceBuffer(buffer_size=10000)
 CHAMPION = challenger_list[0]
@@ -248,7 +248,9 @@ for gen_count in range(1, num_generations + 1, 1):
             opponent_list.append(challenger_list[j])
 
     while score < score_margin and episode_count < max_num_episodes:
-        train_agent_against_list(CHALLENGER, opponent_list, compete_interval, episode_count)
+        train_agent_against_list(CHALLENGER, opponent_list,
+                                 min(compete_interval, max_num_episodes - episode_count),
+                                 episode_count)
         episode_count = episode_count + compete_interval
         win_list = compete_and_return_score_list(CHAMPION, CHALLENGER, trial_length)
         score = np.sum(win_list)

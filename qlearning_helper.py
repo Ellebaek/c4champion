@@ -14,11 +14,14 @@ def get_state42(c4game):
     return board.reshape((1, board_size))
 
 
-def get_state(c4game):
+def get_state126(c4game):
     boardP1 = (np.array(c4game.board_position) == -1).astype(int)
     boardP2 = (np.array(c4game.board_position) == 1).astype(int)
     boardEmpty = (np.array(c4game.board_position) == 0).astype(int)
     return np.concatenate((boardP1.reshape((1, board_size)), boardP2.reshape((1, board_size)), boardEmpty.reshape((1, board_size))), axis = 1)
+
+def get_state(c4game):
+    return np.array(c4game.board_position)
 
 def discount_rewards(r, gamma):
     """ take 1D float array of rewards and compute discounted reward """
@@ -97,6 +100,14 @@ def best_allowed_action(q_values, open_actions, top):
     return a_best
 
 def dup_mirror_input(states, targets):
+    states_mirror = np.zeros((states.shape))
+    for r in range(states.shape[0]):
+        states_mirror[r] = np.flip(states[r], 1)
+
+    targets_mirror = np.flip(targets, axis=1)
+    return np.vstack((states, states_mirror)), np.vstack((targets, targets_mirror))
+
+def dup_mirror_input126(states, targets):
     states_mirror = np.zeros((states.shape))
     for r in range(states.shape[0]):
         bP1Mirror = np.flip(states[r, 0:board_size].reshape((Connect4Game.ROW_COUNT, Connect4Game.COLUMN_COUNT)),1)

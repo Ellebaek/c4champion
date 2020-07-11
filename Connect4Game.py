@@ -1,6 +1,7 @@
 import numpy as np
 
-class Connect4Game():
+
+class Connect4Game:
     ROW_COUNT = 6
     COLUMN_COUNT = 7
 
@@ -23,7 +24,7 @@ class Connect4Game():
         board = [[0 for _x in range(self.COLUMN_COUNT)] for _y in range(self.ROW_COUNT)]
         return board
 
-    #def get_winner(self):
+    # def get_winner(self):
     #    w = None
     #    if self.evaluate_board(self.previous_player) == 4:
     #        w = self.previous_player
@@ -51,7 +52,7 @@ class Connect4Game():
 
     def evaluate_board(self):
         strip_eval = None
-        center_height = self.ROW_COUNT # - self.first_empty_row(3)
+        center_height = self.ROW_COUNT  # - self.first_empty_row(3)
         sum1 = 0
         sum2 = 0
         pot1 = False
@@ -63,9 +64,9 @@ class Connect4Game():
             while i <= height - 4:
                 row_id = self.ROW_COUNT - 1 - i
                 strip_eval = self.evaluate_strip(self.board_position[row_id][column],
-                                                 self.board_position[row_id-1][column],
-                                                 self.board_position[row_id-2][column],
-                                                 self.board_position[row_id-3][column])
+                                                 self.board_position[row_id - 1][column],
+                                                 self.board_position[row_id - 2][column],
+                                                 self.board_position[row_id - 3][column])
                 sum1 = min(sum1, strip_eval[0])
                 pot1 = pot1 or strip_eval[1]
                 sum2 = max(sum2, strip_eval[2])
@@ -78,9 +79,9 @@ class Connect4Game():
             i = 0
             while i < 4:
                 strip_eval = self.evaluate_strip(self.board_position[row_id][i],
-                                                 self.board_position[row_id][i+1],
-                                                 self.board_position[row_id][i+2],
-                                                 self.board_position[row_id][i+3])
+                                                 self.board_position[row_id][i + 1],
+                                                 self.board_position[row_id][i + 2],
+                                                 self.board_position[row_id][i + 3])
                 sum1 = min(sum1, strip_eval[0])
                 pot1 = pot1 or strip_eval[1]
                 sum2 = max(sum2, strip_eval[2])
@@ -90,11 +91,11 @@ class Connect4Game():
         # check diagonal top-left bottom-right
         for row in range(center_height):
             row_id = self.ROW_COUNT - 1 - row
-            for d in range(max(0, row-2), min(row+1, 4), 1):
-                strip_eval = self.evaluate_strip(self.board_position[row_id-3+d][d],
-                                                 self.board_position[row_id-2+d][d+1],
-                                                 self.board_position[row_id-1+d][d+2],
-                                                 self.board_position[row_id+d][d+3])
+            for d in range(max(0, row - 2), min(row + 1, 4), 1):
+                strip_eval = self.evaluate_strip(self.board_position[row_id - 3 + d][d],
+                                                 self.board_position[row_id - 2 + d][d + 1],
+                                                 self.board_position[row_id - 1 + d][d + 2],
+                                                 self.board_position[row_id + d][d + 3])
                 sum1 = min(sum1, strip_eval[0])
                 pot1 = pot1 or strip_eval[1]
                 sum2 = max(sum2, strip_eval[2])
@@ -103,11 +104,11 @@ class Connect4Game():
         # check diagonal bottom-left top-right
         for row in range(center_height):
             row_id = self.ROW_COUNT - 1 - row
-            for d in range(max(0, 3-row), min(6-row, 4), 1):
-                strip_eval = self.evaluate_strip(self.board_position[row_id-d+3][d],
-                                                 self.board_position[row_id-d+2][d+1],
-                                                 self.board_position[row_id-d+1][d+2],
-                                                 self.board_position[row_id-d][d+3])
+            for d in range(max(0, 3 - row), min(6 - row, 4), 1):
+                strip_eval = self.evaluate_strip(self.board_position[row_id - d + 3][d],
+                                                 self.board_position[row_id - d + 2][d + 1],
+                                                 self.board_position[row_id - d + 1][d + 2],
+                                                 self.board_position[row_id - d][d + 3])
                 sum1 = min(sum1, strip_eval[0])
                 pot1 = pot1 or strip_eval[1]
                 sum2 = max(sum2, strip_eval[2])
@@ -115,7 +116,7 @@ class Connect4Game():
         return [sum1, pot1, sum2, pot2]
 
     def first_empty_row(self, board_column_id):
-        for row in range(self.ROW_COUNT-1, -1, -1):
+        for row in range(self.ROW_COUNT - 1, -1, -1):
             if self.board_position[row][board_column_id] == 0:
                 return row
         return -1
